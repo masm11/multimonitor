@@ -18,8 +18,14 @@
 
 #include "mccgraph.h"
 
+typedef struct _MccGraphPrivate {
+    GList *list;
+} MccGraphPrivate;
+
 G_DEFINE_TYPE(MccGraph, mcc_graph, GTK_TYPE_MISC)
 
+static void mcc_graph_finalize(GObject *obj);
+static void mcc_graph_destroy(GtkObject *object);
 static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event);
 
 static void mcc_graph_class_init(MccGraphClass *klass)
@@ -28,12 +34,29 @@ static void mcc_graph_class_init(MccGraphClass *klass)
     GtkObjectClass *object_class = GTK_OBJECT_CLASS(klass);
     GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
     
+    gobject_class->finalize = mcc_graph_finalize;
+    
+    object_class->destroy = mcc_graph_destroy;
+    
     widget_class->expose_event = mcc_graph_expose;
+    
 }
 
 static void mcc_graph_init(MccGraph *self)
 {
-    self->list = NULL;
+    self->priv = g_new0(struct _MccGraphPrivate, 1);
+    
+    self->priv->list = NULL;
+}
+
+static void mcc_graph_finalize(GObject *object)
+{
+    (*G_OBJECT_CLASS(mcc_graph_parent_class)->finalize)(object);
+}
+
+static void mcc_graph_destroy(GtkObject *object)
+{
+    (*GTK_OBJECT_CLASS(mcc_graph_parent_class)->destroy)(object);
 }
 
 static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
@@ -65,7 +88,7 @@ static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
 	
 	gint x;
 	GList *lp;
-	for (lp = graph->list, x = width - 1; lp != NULL; lp = lp->next, x--) {
+	for (lp = graph->priv->list, x = width - 1; lp != NULL; lp = lp->next, x--) {
 	    gint v = GPOINTER_TO_INT(lp->data);
 	    gdk_draw_line(widget->window, gc, x, v, x, height);
 	}
@@ -78,7 +101,7 @@ static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
 
 void mcc_graph_add(MccGraph *graph, gint val)
 {
-    graph->list = g_list_prepend(graph->list, GINT_TO_POINTER(val));
+    graph->priv->list = g_list_prepend(graph->priv->list, GINT_TO_POINTER(val));
     gtk_widget_queue_clear(GTK_WIDGET(graph));
 }
 

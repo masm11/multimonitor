@@ -31,12 +31,12 @@
 typedef struct _MccGraph       MccGraph;
 typedef struct _MccGraphClass  MccGraphClass;
 
+struct _MccGraphPrivate;
+
 struct _MccGraph {
     GtkMisc misc;
     
-    gint dummy;
-    
-    GList *list;
+    struct _MccGraphPrivate *priv;
 };
 
 struct _MccGraphClass {
