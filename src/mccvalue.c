@@ -19,7 +19,9 @@
 #include "mccvalue.h"
 
 typedef struct _MccValuePrivate {
-    gdouble value;
+    gint nvalues;
+    
+    gdouble *values;
     
 } MccValuePrivate;
 
@@ -38,12 +40,15 @@ static void mcc_value_init(MccValue *self)
 {
     self->priv = g_new0(struct _MccValuePrivate, 1);
     
-    self->priv->value = 0;
+    self->priv->values = NULL;
 }
 
 static void mcc_value_finalize(GObject *object)
 {
     MccValue *value = MCC_VALUE(object);
+    
+    g_free(value->priv->values);
+    
     g_free(value->priv);
     value->priv = NULL;
     
@@ -52,18 +57,23 @@ static void mcc_value_finalize(GObject *object)
 
 void mcc_value_set_value(MccValue *value, gint idx, gdouble val)
 {
-    value->priv->value = val;
+    g_assert((guint) idx < value->priv->nvalues);
+    value->priv->values[idx] = val;
 }
 
-gdouble mcc_value_get_value(gint idx, MccValue *value)
+gdouble mcc_value_get_value(MccValue *value, gint idx)
 {
-    return value->priv->value;
+    g_assert((guint) idx < value->priv->nvalues);
+    return value->priv->values[idx];
 }
 
 // fixme: メモリ管理
-MccValue *mcc_value_new(void)
+MccValue *mcc_value_new(gint nvalues)
 {
     MccValue *value = g_object_new(MCC_TYPE_VALUE, NULL);
+    
+    value->priv->nvalues = nvalues;
+    value->priv->values = g_new0(gdouble, nvalues);
     
     return value;
 }

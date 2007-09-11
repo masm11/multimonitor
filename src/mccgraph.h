@@ -44,7 +44,7 @@ struct _MccGraphClass {
     GtkMiscClass parent_class;
 };
 
-GtkWidget *mcc_graph_new(void);
+GtkWidget *mcc_graph_new(gint nvalues);
 void mcc_graph_add(MccGraph *graph, MccValue *value);
 
 #endif

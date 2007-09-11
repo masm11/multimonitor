@@ -43,8 +43,8 @@ struct _MccValueClass {
     GObjectClass parent_class;
 };
 
-MccValue *mcc_value_new(void);
+MccValue *mcc_value_new(gint nvalues);
 void mcc_value_set_value(MccValue *value, gint idx, gdouble val);
-gdouble mcc_value_get_value(gint idx, MccValue *value);
+gdouble mcc_value_get_value(MccValue *value, gint idx);
 
 #endif
