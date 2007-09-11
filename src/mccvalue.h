@@ -44,7 +44,7 @@ struct _MccValueClass {
 };
 
 MccValue *mcc_value_new(void);
-void mcc_value_set_value(MccValue *value, gdouble val);
-gdouble mcc_value_get_value(MccValue *value);
+void mcc_value_set_value(MccValue *value, gint idx, gdouble val);
+gdouble mcc_value_get_value(gint idx, MccValue *value);
 
 #endif

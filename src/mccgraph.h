@@ -20,6 +20,7 @@
 #define MCC_GRAPH_H
 
 #include <gtk/gtkmisc.h>
+#include "mccvalue.h"
 
 #define MCC_TYPE_GRAPH                  (mcc_graph_get_type ())
 #define MCC_GRAPH(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), MCC_TYPE_GRAPH, MccGraph))
@@ -42,5 +43,8 @@ struct _MccGraph {
 struct _MccGraphClass {
     GtkMiscClass parent_class;
 };
+
+GtkWidget *mcc_graph_new(void);
+void mcc_graph_add(MccGraph *graph, MccValue *value);
 
 #endif

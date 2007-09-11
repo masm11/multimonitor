@@ -7,8 +7,10 @@ static gboolean timer(gpointer data)
     GtkWidget *g = data;
     
     MccValue *value = mcc_value_new();
-    mcc_value_set_value(value, rand() % 6);
-    mcc_graph_add(g, value);
+    mcc_value_set_value(value, 0, rand() % 6);
+    mcc_graph_add(MCC_GRAPH(g), value);
+    
+    g_object_unref(value);
     
     return TRUE;
 }
@@ -24,7 +26,7 @@ int main(int argc, char **argv)
     
     gtk_widget_show_all(top);
     
-    g_timeout_add(1000, timer, g);
+    g_timeout_add(100, timer, g);
     
     gtk_main();
     

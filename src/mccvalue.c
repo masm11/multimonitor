@@ -50,16 +50,17 @@ static void mcc_value_finalize(GObject *object)
     (*G_OBJECT_CLASS(mcc_value_parent_class)->finalize)(object);
 }
 
-void mcc_value_set_value(MccValue *value, gdouble val)
+void mcc_value_set_value(MccValue *value, gint idx, gdouble val)
 {
     value->priv->value = val;
 }
 
-gdouble mcc_value_get_value(MccValue *value)
+gdouble mcc_value_get_value(gint idx, MccValue *value)
 {
     return value->priv->value;
 }
 
+// fixme: メモリ管理
 MccValue *mcc_value_new(void)
 {
     MccValue *value = g_object_new(MCC_TYPE_VALUE, NULL);

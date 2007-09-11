@@ -21,6 +21,8 @@
 
 typedef struct _MccGraphPrivate {
     GList *list;
+    guint nvalues;
+    
     GdkPixmap *pixmap;
     guint16 pix_width, pix_height;
     
@@ -61,6 +63,8 @@ static void mcc_graph_init(MccGraph *self)
     self->priv = g_new0(struct _MccGraphPrivate, 1);
     
     self->priv->list = NULL;
+    self->priv->nvalues = 0;
+    
     self->priv->min = 0;
     self->priv->max = 5;
 }
@@ -172,7 +176,7 @@ static void create_pixmap(MccGraph *graph)
     GList *lp;
     for (lp = graph->priv->list, x = priv->pix_width - 1; lp != NULL; lp = lp->next, x--) {
 	MccValue *value = lp->data;
-	gdouble v = mcc_value_get_value(value);
+	gdouble v = mcc_value_get_value(0, value);
 	gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	if (h > 0) {
 	    gdk_draw_line(priv->pixmap, priv->gc_fg,
@@ -193,7 +197,7 @@ static void shift_and_draw(MccGraph *graph)
 	guint x = priv->pix_width - 1;
 	gdk_draw_line(priv->pixmap, priv->gc_bg, x, 0, x, priv->pix_height);
 	MccValue *value = priv->list->data;
-	gint v = mcc_value_get_value(value);
+	gint v = mcc_value_get_value(0, value);
 	gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	if (h > 0) {
 	    gdk_draw_line(priv->pixmap, priv->gc_fg,
@@ -206,7 +210,22 @@ static void shift_and_draw(MccGraph *graph)
 
 void mcc_graph_add(MccGraph *graph, MccValue *value)
 {
+    g_object_ref(value);
     graph->priv->list = g_list_prepend(graph->priv->list, value);
+    
+    if (++graph->priv->nvalues > graph->priv->pix_width) {
+	GList *last = g_list_nth(graph->priv->list, graph->priv->pix_width - 1);
+	if (last != NULL) {
+	    GList *lp;
+	    while ((lp = g_list_next(last)) != NULL) {
+		MccValue *v = lp->data;
+		graph->priv->list = g_list_delete_link(graph->priv->list, lp);
+		g_object_unref(v);
+		graph->priv->nvalues--;
+	    }
+	}
+    }
+    
     shift_and_draw(graph);
 }
 
