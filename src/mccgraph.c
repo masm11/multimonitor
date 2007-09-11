@@ -16,6 +16,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include "mccvalue.h"
 #include "mccgraph.h"
 
 typedef struct _MccGraphPrivate {
@@ -170,7 +171,8 @@ static void create_pixmap(MccGraph *graph)
     gint x;
     GList *lp;
     for (lp = graph->priv->list, x = priv->pix_width - 1; lp != NULL; lp = lp->next, x--) {
-	gint v = GPOINTER_TO_INT(lp->data);
+	MccValue *value = lp->data;
+	gdouble v = mcc_value_get_value(value);
 	gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	if (h > 0) {
 	    gdk_draw_line(priv->pixmap, priv->gc_fg,
@@ -190,7 +192,8 @@ static void shift_and_draw(MccGraph *graph)
 	
 	guint x = priv->pix_width - 1;
 	gdk_draw_line(priv->pixmap, priv->gc_bg, x, 0, x, priv->pix_height);
-	gint v = GPOINTER_TO_INT(priv->list->data);
+	MccValue *value = priv->list->data;
+	gint v = mcc_value_get_value(value);
 	gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	if (h > 0) {
 	    gdk_draw_line(priv->pixmap, priv->gc_fg,
@@ -201,9 +204,9 @@ static void shift_and_draw(MccGraph *graph)
     gtk_widget_queue_clear(GTK_WIDGET(graph));
 }
 
-void mcc_graph_add(MccGraph *graph, gint val)
+void mcc_graph_add(MccGraph *graph, MccValue *value)
 {
-    graph->priv->list = g_list_prepend(graph->priv->list, GINT_TO_POINTER(val));
+    graph->priv->list = g_list_prepend(graph->priv->list, value);
     shift_and_draw(graph);
 }
 

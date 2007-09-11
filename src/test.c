@@ -1,11 +1,14 @@
 #include <gtk/gtk.h>
 #include "mccgraph.h"
+#include "mccvalue.h"
 
 static gboolean timer(gpointer data)
 {
     GtkWidget *g = data;
     
-    mcc_graph_add(g, rand() % 6);
+    MccValue *value = mcc_value_new();
+    mcc_value_set_value(value, rand() % 6);
+    mcc_graph_add(g, value);
     
     return TRUE;
 }
