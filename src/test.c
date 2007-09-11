@@ -5,7 +5,7 @@ static gboolean timer(gpointer data)
 {
     GtkWidget *g = data;
     
-    mcc_graph_add(g, rand() % 200);
+    mcc_graph_add(g, rand() % 6);
     
     return TRUE;
 }
