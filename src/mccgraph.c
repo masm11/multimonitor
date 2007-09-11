@@ -32,6 +32,7 @@ G_DEFINE_TYPE(MccGraph, mcc_graph, GTK_TYPE_MISC)
 static void mcc_graph_finalize(GObject *obj);
 static void mcc_graph_destroy(GtkObject *object);
 static void mcc_graph_realize(GtkWidget *widget);
+static void mcc_graph_size_allocate(GtkWidget *widget, GtkAllocation *allocation);
 static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event);
 static void create_pixmap(MccGraph *graph);
 static void shift_and_draw(MccGraph *graph);
@@ -48,6 +49,7 @@ static void mcc_graph_class_init(MccGraphClass *klass)
     
     widget_class->expose_event = mcc_graph_expose;
     widget_class->realize = mcc_graph_realize;
+    widget_class->size_allocate = mcc_graph_size_allocate;
 }
 
 static void mcc_graph_init(MccGraph *self)
@@ -95,6 +97,17 @@ static void mcc_graph_realize(GtkWidget *widget)
     gdk_gc_set_foreground(priv->gc_fg, &fg);
     
     create_pixmap(graph);
+}
+
+static void mcc_graph_size_allocate(GtkWidget *widget, GtkAllocation *allocation)
+{
+    MccGraph *graph = MCC_GRAPH(widget);
+    
+    (*GTK_WIDGET_CLASS(mcc_graph_parent_class)->size_allocate)(widget, allocation);
+    
+    if (GTK_WIDGET_VISIBLE(widget) && GTK_WIDGET_MAPPED(widget)) {
+	create_pixmap(graph);
+    }
 }
 
 static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
