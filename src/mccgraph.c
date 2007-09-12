@@ -68,7 +68,7 @@ static void mcc_graph_init(MccGraph *self)
     self->priv->listlen = 0;
     
     self->priv->min = 0;
-    self->priv->max = 100;
+    self->priv->max = 1.0;
 }
 
 static void mcc_graph_finalize(GObject *object)
@@ -157,9 +157,15 @@ static void create_gc(MccGraph *graph)
     for (i = 0; i < priv->nvalues; i++) {
 	priv->gc_fg[i] = gdk_gc_new(widget->window);
 	gdk_gc_set_function(priv->gc_fg[i], GDK_COPY);
+#if 1
+	col.blue  = ((i + 1) & 1) ? 0xffff : 0;
+	col.red   = ((i + 1) & 2) ? 0xffff : 0;
+	col.green = ((i + 1) & 4) ? 0xffff : 0;
+#else
 	col.red = 0xffff * (i + 1) / priv->nvalues;
 	col.green = 0xffff * (i + 1) / priv->nvalues;
 	col.blue = 0xffff * (i + 1) / priv->nvalues;
+#endif
 	gdk_colormap_alloc_color(cmap, &col, FALSE, TRUE);
 	gdk_gc_set_foreground(priv->gc_fg[i], &col);
     }
