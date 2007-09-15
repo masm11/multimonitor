@@ -19,7 +19,6 @@ static struct cpuload_t {
 
 struct cpuload_work_t {
     gint idx;
-    GtkWidget *graph;
 };
 
 static void cpuload_read_data(data_per_cpu *ptr, gint nr);
@@ -82,7 +81,9 @@ static void *cpuload_new(void)
 {
     struct cpuload_work_t *w = g_new0(struct cpuload_work_t, 1);
     
-    w->graph = mcc_graph_new(NR_DATA - 1);
+    static gint idx = 0;
+    
+    w->idx = idx++ % (work.ncpu + 1);
     
     return w;
 }

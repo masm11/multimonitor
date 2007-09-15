@@ -10,7 +10,7 @@ static struct ops_t *ops_list[] = {
 #define NOPS (sizeof ops_list / sizeof ops_list[0])
 
 static gint idxs[] = {
-    0, 0,
+    0, 0, 0,
 };
 
 #define NR (sizeof idxs / sizeof idxs[0])
