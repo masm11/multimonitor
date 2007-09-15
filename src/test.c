@@ -5,12 +5,13 @@
 
 static struct ops_t *ops_list[] = {
     &linux_cpuload_ops,
+    &linux_cpufreq_ops,
 };
 
 #define NOPS (sizeof ops_list / sizeof ops_list[0])
 
 static gint idxs[] = {
-    0, 0, 0,
+    0, 0, 0, 1, 1,
 };
 
 #define NR (sizeof idxs / sizeof idxs[0])
@@ -56,7 +57,8 @@ int main(int argc, char **argv)
 	gint idx = idxs[i];
 	struct ops_t *ops = ops_list[idx];
 	void *ptr = (*ops->new)();
-	GtkWidget *g = mcc_graph_new((*ops->nvalues)(ptr));
+	const struct info_t *ip = (*ops->info)(ptr);
+	GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max);
 	g_object_set_data(G_OBJECT(g), "mcc-ops", ops);
 	g_object_set_data(G_OBJECT(g), "mcc-ptr", ptr);
 	gtk_widget_set_size_request(g, 50, 50);

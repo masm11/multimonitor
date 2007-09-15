@@ -260,12 +260,14 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
     shift_and_draw(graph);
 }
 
-GtkWidget *mcc_graph_new(gint nvalues)
+GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max)
 {
     MccGraph *graph;
     
     graph = g_object_new(MCC_TYPE_GRAPH, NULL);
     graph->priv->nvalues = nvalues;
+    graph->priv->min = min;
+    graph->priv->max = max;
     
     return GTK_WIDGET(graph);
 }

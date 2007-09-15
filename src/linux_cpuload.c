@@ -15,6 +15,7 @@ static struct cpuload_t {
     gint ncpu;
     data_per_cpu *olddata;
     data_per_cpu *newdata;
+    struct info_t info;
 } work;
 
 struct cpuload_work_t {
@@ -32,6 +33,10 @@ static void cpuload_init(void)
     ww->ncpu = 2;
     ww->olddata = g_new0(data_per_cpu, ww->ncpu + 1);
     ww->newdata = g_new0(data_per_cpu, ww->ncpu + 1);
+    
+    ww->info.min = 0;
+    ww->info.max = 1.0;
+    ww->info.nvalues = 7;
     
     cpuload_read_data(ww->newdata, ww->ncpu + 1);
     memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata * (ww->ncpu + 1));
@@ -129,9 +134,9 @@ static MccValue *cpuload_get(void *w0)
     return value;
 }
 
-static gint cpuload_nvalues(void *w0)
+static const struct info_t *cpuload_info(void *w0)
 {
-    return 7;
+    return &work.info;
 }
 
 struct ops_t linux_cpuload_ops = {
@@ -141,6 +146,6 @@ struct ops_t linux_cpuload_ops = {
     
     .new = cpuload_new,
     .get = cpuload_get,
-    .nvalues = cpuload_nvalues,
+    .info = cpuload_info,
     .destroy = cpuload_destroy,
 };

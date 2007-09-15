@@ -45,7 +45,7 @@ struct _MccGraphClass {
 };
 
 GType mcc_graph_get_type(void) G_GNUC_CONST;
-GtkWidget *mcc_graph_new(gint nvalues);
+GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max);
 void mcc_graph_add(MccGraph *graph, MccValue *value);
 
 #endif
