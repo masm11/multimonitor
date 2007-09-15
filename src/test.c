@@ -1,43 +1,59 @@
 #include <gtk/gtk.h>
 #include "mccgraph.h"
 #include "mccvalue.h"
-#include "mcctick.h"
 #include "ops.h"
 
-static void *tmp;
-    
+static struct ops_t *ops[] = {
+    &linux_cpuload_ops,
+};
+
+#define NR (sizeof ops / sizeof ops[0])
+
+static void *ptrs[NR];
+static GtkWidget *graph[NR];
+
 static gboolean timer(gpointer data)
 {
-    GtkWidget *g = data;
+    int i;
     
-    (*linux_cpuload_ops.sread)();
+    for (i = 0; i < NR; i++)
+	(*ops[i]->sread)();
     
-    MccValue *value = (*linux_cpuload_ops.get)(tmp);
-    mcc_graph_add(MCC_GRAPH(g), value);
+    for (i = 0; i < NR; i++) {
+	MccValue *value = (*ops[i]->get)(ptrs[i]);
+	mcc_graph_add(MCC_GRAPH(graph[i]), value);
+    }
     
     return TRUE;
 }
 
 int main(int argc, char **argv)
 {
+    int i;
+    
     gtk_init(&argc, &argv);
     
-    (*linux_cpuload_ops.sinit)();
+    for (i = 0; i < NR; i++)
+	(*ops[i]->sinit)();
     
     GtkWidget *top = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     
-    tmp = (*linux_cpuload_ops.new)();
+    for (i = 0; i < NR; i++)
+	ptrs[i] = (*ops[i]->new)();
     
-    GtkWidget *g = mcc_graph_new((*linux_cpuload_ops.nvalues)(tmp));
-    gtk_container_add(GTK_CONTAINER(top), g);
+    for (i = 0; i < NR; i++) {
+	graph[i] = mcc_graph_new((*ops[i]->nvalues)(ptrs[i]));
+	gtk_container_add(GTK_CONTAINER(top), graph[i]);
+    }
     
     gtk_widget_show_all(top);
     
-    g_timeout_add(100, timer, g);
+    g_timeout_add(100, timer, NULL);
     
     gtk_main();
     
-    (*linux_cpuload_ops.sfini)();
+    for (i = 0; i < NR; i++)
+	(*ops[i]->sfini)();
     
     return 0;
 }
