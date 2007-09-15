@@ -1,80 +1,145 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <glib.h>
+#include "mccgraph.h"
+#include "mccvalue.h"
+#include "ops.h"
 
 #define NR_CPU 2
-#define NR_DATA 7
+#define NR_DATA 8
 
-static gint64 olddata[NR_CPU + 1][NR_DATA + 1];
+typedef gint64 data_per_cpu[NR_DATA];
 
-static gboolean cpuload_read(gint64 (*ptr)[NR_DATA + 1]);
+static struct cpuload_t {
+    gint ncpu;
+    data_per_cpu *olddata;
+    data_per_cpu *newdata;
+} work;
 
-void cpuload_init(gint *ncpu, gint *ndata)
+struct cpuload_work_t {
+    gint idx;
+    GtkWidget *graph;
+};
+
+static void cpuload_read_data(data_per_cpu *ptr, gint nr);
+
+static void cpuload_init(void)
 {
-    *ncpu = NR_CPU;
-    *ndata = NR_DATA;
+    struct cpuload_t *ww = &work;
     
-    cpuload_read(olddata);
+    memset(ww, 0, sizeof *ww);
+    
+    ww->ncpu = 2;
+    ww->olddata = g_new0(data_per_cpu, ww->ncpu + 1);
+    ww->newdata = g_new0(data_per_cpu, ww->ncpu + 1);
+    
+    cpuload_read_data(ww->newdata, ww->ncpu + 1);
+    memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata * (ww->ncpu + 1));
 }
 
-static gboolean cpuload_read(gint64 (*ptr)[NR_DATA + 1])
+static void cpuload_read(void)
+{
+    struct cpuload_t *ww = &work;
+    
+    memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata * (ww->ncpu + 1));
+    cpuload_read_data(ww->newdata, ww->ncpu + 1);
+}
+
+static void cpuload_fini(void)
+{
+    struct cpuload_t *ww = &work;
+    
+    ww->ncpu = 0;
+    free(ww->olddata);
+    ww->olddata = NULL;
+    free(ww->newdata);
+    ww->newdata = NULL;
+}
+
+static void cpuload_read_data(data_per_cpu *ptr, gint nr)
 {
     FILE *fp;
     
     if ((fp = fopen("/proc/stat", "rt")) == NULL)
-	return FALSE;
+	return;
     
     int i;
-    for (i = 0; i < NR_CPU + 1; i++) {
+    for (i = 0; i < nr; i++) {
 	char buf[1024];
 	if (fgets(buf, sizeof buf, fp) == NULL)
 	    break;
-	if (sscanf(buf, "%*s %lld %lld %lld %lld %lld %lld %lld %lld",
+	if (sscanf(buf, "%*s %" G_GINT64_FORMAT " %" G_GINT64_FORMAT " %" G_GINT64_FORMAT " %" G_GINT64_FORMAT " %" G_GINT64_FORMAT " %" G_GINT64_FORMAT " %" G_GINT64_FORMAT " %" G_GINT64_FORMAT "",
 			&ptr[i][0], &ptr[i][1], &ptr[i][2], &ptr[i][3],
 			&ptr[i][4], &ptr[i][5], &ptr[i][6], &ptr[i][7]) != 8)
 	    break;
     }
     
     fclose(fp);
-    
-    return TRUE;
 }
 
-gdouble **cpuload_get(void)
+static void *cpuload_new(void)
 {
-    int i, j;
+    struct cpuload_work_t *w = g_new0(struct cpuload_work_t, 1);
     
-    gdouble **rv = g_new0(gdouble *, NR_CPU + 1);
-    for (i = 0; i < NR_CPU + 1; i++) {
-	rv[i] = g_new0(gdouble, NR_DATA);
-	for (j = 0; j < NR_DATA; j++)
-	    rv[i][j] = 0;
-    }
+    w->graph = mcc_graph_new(NR_DATA - 1);
     
-    gint64 data[NR_CPU + 1][NR_DATA + 1];
-    
-    if (cpuload_read(data)) {
-	for (i = 0; i < NR_CPU + 1; i++) {
-	    gint64 total
-		    = data[i][0] - olddata[i][0]
-		    + data[i][1] - olddata[i][1]
-		    + data[i][2] - olddata[i][2]
-		    + data[i][3] - olddata[i][3]
-		    + data[i][4] - olddata[i][4]
-		    + data[i][5] - olddata[i][5]
-		    + data[i][6] - olddata[i][6]
-		    + data[i][7] - olddata[i][7];
-	    rv[i][0] = (data[i][0] - olddata[i][0]) / (gdouble) total;	// user
-	    rv[i][1] = (data[i][1] - olddata[i][1]) / (gdouble) total;	// nice
-	    rv[i][2] = (data[i][2] - olddata[i][2]) / (gdouble) total;	// sys
-	    rv[i][3] = (data[i][4] - olddata[i][4]) / (gdouble) total;	// iowait
-	    rv[i][4] = (data[i][5] - olddata[i][5]) / (gdouble) total;	// irq
-	    rv[i][5] = (data[i][6] - olddata[i][6]) / (gdouble) total;	// softirq
-	    rv[i][6] = (data[i][7] - olddata[i][7]) / (gdouble) total;	// steal
-	}
-	
-	memcpy(&olddata, &data, sizeof olddata);
-    }
-    
-    return rv;
+    return w;
 }
+
+static void cpuload_destroy(void *w0)
+{
+    struct cpuload_work_t *w = w0;
+}
+
+static MccValue *cpuload_get(void *w0)
+{
+    struct cpuload_t *ww = &work;
+    struct cpuload_work_t *w = w0;
+    int i;
+    
+    gdouble vals[NR_DATA];
+    
+    for (i = 0; i < NR_DATA; i++)
+	vals[i] = 0;
+    
+    gint64 total
+	    = ww->newdata[w->idx][0] - ww->olddata[w->idx][0]
+	    + ww->newdata[w->idx][1] - ww->olddata[w->idx][1]
+	    + ww->newdata[w->idx][2] - ww->olddata[w->idx][2]
+	    + ww->newdata[w->idx][3] - ww->olddata[w->idx][3]
+	    + ww->newdata[w->idx][4] - ww->olddata[w->idx][4]
+	    + ww->newdata[w->idx][5] - ww->olddata[w->idx][5]
+	    + ww->newdata[w->idx][6] - ww->olddata[w->idx][6]
+	    + ww->newdata[w->idx][7] - ww->olddata[w->idx][7];
+    // fixme: if total==0.
+    vals[0] = (ww->newdata[w->idx][0] - ww->olddata[w->idx][0]) / (gdouble) total;	// user
+    vals[1] = (ww->newdata[w->idx][1] - ww->olddata[w->idx][1]) / (gdouble) total;	// nice
+    vals[2] = (ww->newdata[w->idx][2] - ww->olddata[w->idx][2]) / (gdouble) total;	// sys
+    vals[3] = (ww->newdata[w->idx][4] - ww->olddata[w->idx][4]) / (gdouble) total;	// iowait
+    vals[4] = (ww->newdata[w->idx][5] - ww->olddata[w->idx][5]) / (gdouble) total;	// irq
+    vals[5] = (ww->newdata[w->idx][6] - ww->olddata[w->idx][6]) / (gdouble) total;	// softirq
+    vals[6] = (ww->newdata[w->idx][7] - ww->olddata[w->idx][7]) / (gdouble) total;	// steal
+    
+    MccValue *value = mcc_value_new(NR_DATA - 1);
+    for (i = 0; i < NR_DATA - 1; i++)
+	mcc_value_set_value(value, i, vals[i]);
+    
+    return value;
+}
+
+static gint cpuload_nvalues(void *w0)
+{
+    return 7;
+}
+
+struct ops_t linux_cpuload_ops = {
+    .sinit = cpuload_init,
+    .sread = cpuload_read,
+    .sfini = cpuload_fini,
+    
+    .new = cpuload_new,
+    .get = cpuload_get,
+    .nvalues = cpuload_nvalues,
+    .destroy = cpuload_destroy,
+};
