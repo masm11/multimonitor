@@ -7,7 +7,6 @@
 #define DATASRC_CONTEXT_T cpuload_work_t
 #include "datasrc.h"
 
-#define NR_CPU 2
 #define NR_DATA 8
 
 typedef gint64 data_per_cpu[NR_DATA];
@@ -16,7 +15,6 @@ static struct cpuload_t {
     gint ncpu;
     data_per_cpu *olddata;
     data_per_cpu *newdata;
-    struct datasrc_info_t info;
 } work;
 
 struct cpuload_work_t {
@@ -47,6 +45,16 @@ static GdkColor default_bg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
 };
 
+static const struct datasrc_info_t info = {
+    .min = 0.0,
+    .max = 1.0,
+    .nvalues = 7,
+    .value_labels = labels,
+    .default_fg = default_fg,
+    .nbg = 1,
+    .default_bg = default_bg,
+};
+
 static void cpuload_read_data(data_per_cpu *ptr, gint nr);
 
 static void cpuload_init(void)
@@ -58,14 +66,6 @@ static void cpuload_init(void)
     ww->ncpu = 2;
     ww->olddata = g_new0(data_per_cpu, ww->ncpu + 1);
     ww->newdata = g_new0(data_per_cpu, ww->ncpu + 1);
-    
-    ww->info.min = 0;
-    ww->info.max = 1.0;
-    ww->info.nvalues = 7;
-    ww->info.value_labels = labels;
-    ww->info.default_fg = default_fg;
-    ww->info.nbg = 1;
-    ww->info.default_bg = default_bg;
     
     cpuload_read_data(ww->newdata, ww->ncpu + 1);
     memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata * (ww->ncpu + 1));
@@ -131,11 +131,9 @@ static MccValue *cpuload_get(struct datasrc_context_t *w0)
 {
     struct cpuload_t *ww = &work;
     struct cpuload_work_t *w = datasrc_context_ptr(w0);
-    int i;
-    
     gdouble vals[NR_DATA];
     
-    for (i = 0; i < NR_DATA; i++)
+    for (gint i = 0; i < NR_DATA; i++)
 	vals[i] = 0;
     
     gint64 total
@@ -157,7 +155,7 @@ static MccValue *cpuload_get(struct datasrc_context_t *w0)
     vals[6] = (ww->newdata[w->idx][7] - ww->olddata[w->idx][7]) / (gdouble) total;	// steal
     
     MccValue *value = mcc_value_new(NR_DATA - 1);
-    for (i = 0; i < NR_DATA - 1; i++)
+    for (gint i = 0; i < NR_DATA - 1; i++)
 	mcc_value_set_value(value, i, vals[i]);
     
     return value;
@@ -165,7 +163,7 @@ static MccValue *cpuload_get(struct datasrc_context_t *w0)
 
 static const struct datasrc_info_t *cpuload_info(struct datasrc_context_t *w0)
 {
-    return &work.info;
+    return &info;
 }
 
 struct datasrc_t linux_cpuload_datasrc = {

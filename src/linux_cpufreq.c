@@ -15,7 +15,6 @@ static struct cpufreq_t {
     gint ncpu;
     data_per_cpu *olddata;
     data_per_cpu *newdata;
-    struct datasrc_info_t info;
 } work;
 
 struct cpufreq_work_t {
@@ -34,6 +33,16 @@ static GdkColor default_bg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
 };
 
+static const struct datasrc_info_t info = {
+    .min = 0.0,
+    .max = 2001000000,
+    .nvalues = 1,
+    .value_labels = labels,
+    .default_fg = default_fg,
+    .nbg = 1,
+    .default_bg = default_bg,
+};
+
 static void cpufreq_read_data(data_per_cpu *ptr, gint nr);
 
 static void cpufreq_init(void)
@@ -45,14 +54,6 @@ static void cpufreq_init(void)
     ww->ncpu = 2;
     ww->olddata = g_new0(data_per_cpu, ww->ncpu);
     ww->newdata = g_new0(data_per_cpu, ww->ncpu);
-    
-    ww->info.min = 0;
-    ww->info.max = 2001000000;
-    ww->info.nvalues = 1;
-    ww->info.value_labels = labels;
-    ww->info.default_fg = default_fg;
-    ww->info.nbg = 1;
-    ww->info.default_bg = default_bg;
     
     cpufreq_read_data(ww->newdata, ww->ncpu);
     memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata * ww->ncpu);
@@ -79,8 +80,7 @@ static void cpufreq_fini(void)
 
 static void cpufreq_read_data(data_per_cpu *ptr, gint nr)
 {
-    int i;
-    for (i = 0; i < nr; i++) {
+    for (gint i = 0; i < nr; i++) {
 	FILE *fp;
 	char buf[1024];
 	sprintf(buf, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", i);
@@ -125,7 +125,7 @@ static MccValue *cpufreq_get(struct datasrc_context_t *w0)
 
 static const struct datasrc_info_t *cpufreq_info(struct datasrc_context_t *w0)
 {
-    return &work.info;
+    return &info;
 }
 
 struct datasrc_t linux_cpufreq_datasrc = {

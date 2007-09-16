@@ -131,14 +131,13 @@ static void create_gc(MccGraph *graph)
 {
     GtkWidget *widget = &graph->misc.widget;
     MccGraphPrivate *priv = graph->priv;
-    gint i;
     
     GdkColormap *cmap = gdk_colormap_get_system();
     
     if (priv->gc_copy != NULL)
 	g_object_unref(priv->gc_copy);
     if (priv->gc_fg != NULL) {
-	for (i = 0; i < priv->nvalues; i++) {
+	for (gint i = 0; i < priv->nvalues; i++) {
 	    if (priv->gc_fg[i] != NULL) {
 		g_object_unref(priv->gc_fg[i]);
 		priv->gc_fg[i] = NULL;
@@ -148,7 +147,7 @@ static void create_gc(MccGraph *graph)
 	priv->gc_fg = NULL;
     }
     if (priv->gc_bg != NULL) {
-	for (i = 0; i < priv->nbg; i++) {
+	for (gint i = 0; i < priv->nbg; i++) {
 	    if (priv->gc_bg[i] != NULL) {
 		g_object_unref(priv->gc_bg[i]);
 		priv->gc_bg[i] = NULL;
@@ -162,7 +161,7 @@ static void create_gc(MccGraph *graph)
     gdk_gc_set_function(priv->gc_copy, GDK_COPY);
     
     priv->gc_bg = g_new0(GdkGC *, priv->nbg);
-    for (i = 0; i < priv->nbg; i++) {
+    for (gint i = 0; i < priv->nbg; i++) {
 	priv->gc_bg[i] = gdk_gc_new(widget->window);
 	gdk_gc_set_function(priv->gc_bg[i], GDK_COPY);
 	GdkColor col = priv->bg[i];
@@ -171,7 +170,7 @@ static void create_gc(MccGraph *graph)
     }
     
     priv->gc_fg = g_new0(GdkGC *, priv->nvalues);
-    for (i = 0; i < priv->nvalues; i++) {
+    for (gint i = 0; i < priv->nvalues; i++) {
 	priv->gc_fg[i] = gdk_gc_new(widget->window);
 	gdk_gc_set_function(priv->gc_fg[i], GDK_COPY);
 	GdkColor col = priv->fg[i];
@@ -232,10 +231,9 @@ static void shift_and_draw(MccGraph *graph)
 	guint x = priv->pix_width - 1;
 	gdk_draw_line(priv->pixmap, priv->gc_bg[0], x, 0, x, priv->pix_height);
 	MccValue *value = priv->list->data;
-	gint i, j;
-	for (i = priv->nvalues - 1; i >= 0; i--) {
+	for (gint i = priv->nvalues - 1; i >= 0; i--) {
 	    gdouble v = 0;
-	    for (j = 0; j <= i; j++)
+	    for (gint j = 0; j <= i; j++)
 		v += mcc_value_get_value(value, j);
 	    gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	    if (h > 0) {

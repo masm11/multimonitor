@@ -4,4 +4,4 @@ SRCS = test.c datasrc.h mccgraph.c mccgraph.h mccvalue.c mccvalue.h linux_cpuloa
 
 test: $(SRCS)
 	rm -f test
-	gcc -g -Wall -o test `pkg-config --cflags pangoft2 gtk+-2.0 glib-2.0` $(SRCS) `pkg-config --libs pangoft2 gtk+-2.0 glib-2.0`
+	gcc -g -Wall -std=gnu99 -fgnu89-inline -o test `pkg-config --cflags pangoft2 gtk+-2.0 glib-2.0` $(SRCS) `pkg-config --libs pangoft2 gtk+-2.0 glib-2.0`
