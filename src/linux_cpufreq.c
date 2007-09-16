@@ -21,15 +21,15 @@ struct cpufreq_work_t {
     gint idx;
 };
 
-static const gchar *labels[] = {
+static const gchar * const labels[] = {
     "frequency",
 };
 
-static GdkColor default_fg[] = {
+static const GdkColor default_fg[] = {
     { .pixel = 0, .red = 0xffff, .green = 0xffff, .blue = 0xffff },
 };
 
-static GdkColor default_bg[] = {
+static const GdkColor default_bg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
 };
 
@@ -37,8 +37,11 @@ static const struct datasrc_info_t info = {
     .min = 0.0,
     .max = 2001000000,
     .nvalues = 1,
+    
+    .nfg = 1,
     .value_labels = labels,
     .default_fg = default_fg,
+    
     .nbg = 1,
     .default_bg = default_bg,
 };

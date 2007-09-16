@@ -21,7 +21,7 @@ struct cpuload_work_t {
     gint idx;
 };
 
-static const gchar *labels[] = {
+static const gchar * const labels[] = {
     "user",
     "nice",
     "sys",
@@ -31,7 +31,7 @@ static const gchar *labels[] = {
     "steal",
 };
 
-static GdkColor default_fg[] = {
+static const GdkColor default_fg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0xffff },	// user
     { .pixel = 0, .red = 0xffff, .green = 0x0000, .blue = 0x0000 },	// nice
     { .pixel = 0, .red = 0xffff, .green = 0x0000, .blue = 0xffff },	// sys
@@ -41,7 +41,7 @@ static GdkColor default_fg[] = {
     { .pixel = 0, .red = 0xffff, .green = 0xffff, .blue = 0xffff },	// steal
 };
 
-static GdkColor default_bg[] = {
+static const GdkColor default_bg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
 };
 
@@ -49,8 +49,11 @@ static const struct datasrc_info_t info = {
     .min = 0.0,
     .max = 1.0,
     .nvalues = 7,
+    
+    .nfg = 7,
     .value_labels = labels,
     .default_fg = default_fg,
+    
     .nbg = 1,
     .default_bg = default_bg,
 };
@@ -155,8 +158,10 @@ static MccValue *cpuload_get(struct datasrc_context_t *w0)
     vals[6] = (ww->newdata[w->idx][7] - ww->olddata[w->idx][7]) / (gdouble) total;	// steal
     
     MccValue *value = mcc_value_new(NR_DATA - 1);
-    for (gint i = 0; i < NR_DATA - 1; i++)
+    for (gint i = 0; i < NR_DATA - 1; i++) {
 	mcc_value_set_value(value, i, vals[i]);
+	mcc_value_set_foreground(value, i, i);
+    }
     
     return value;
 }

@@ -17,8 +17,10 @@ struct datasrc_info_t {
     gdouble min, max;
     gint nvalues;
     
-    const gchar **value_labels;	// [nvalues]
-    const GdkColor *default_fg;	// [nvalues]
+    gint nfg;
+    const gchar * const *value_labels;	// [nfg]
+    const GdkColor *default_fg;		// [nfg]
+    
     gint nbg;
     const GdkColor *default_bg;	// [nbg]
 };
@@ -36,5 +38,6 @@ struct datasrc_t {
 
 extern struct datasrc_t linux_cpuload_datasrc;
 extern struct datasrc_t linux_cpufreq_datasrc;
+extern struct datasrc_t linux_battery_datasrc;
 
 #endif	/* ifndef DATASRC_H__INCLUDED */

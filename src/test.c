@@ -6,12 +6,13 @@
 static struct datasrc_t *datasrc_list[] = {
     &linux_cpuload_datasrc,
     &linux_cpufreq_datasrc,
+    &linux_battery_datasrc,
 };
 
 #define NDATASRC (sizeof datasrc_list / sizeof datasrc_list[0])
 
 static gint idxs[] = {
-    0, 0, 0, 1, 1,
+    0, 0, 0, 1, 1, 2,
 };
 
 #define NR (sizeof idxs / sizeof idxs[0])
@@ -59,7 +60,7 @@ int main(int argc, char **argv)
 	struct datasrc_context_t *ctxt = (*datasrc->new)();
 	const struct datasrc_info_t *ip = (*datasrc->info)(ctxt);
 	GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max,
-		ip->default_fg, ip->nbg, ip->default_bg);
+		ip->nfg, ip->default_fg, ip->nbg, ip->default_bg);
 	g_object_set_data(G_OBJECT(g), "mcc-datasrc", datasrc);
 	g_object_set_data(G_OBJECT(g), "mcc-context", ctxt);
 	gtk_widget_set_size_request(g, 50, 50);
