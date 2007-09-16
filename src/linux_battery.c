@@ -29,10 +29,12 @@ static const gchar * const labels[] = {
 
 static const GdkColor default_fg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0xffff },
+    { .pixel = 0, .red = 0x0000, .green = 0xffff, .blue = 0xffff },
 };
 
 static const GdkColor default_bg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
+    { .pixel = 0, .red = 0x8000, .green = 0x0000, .blue = 0x0000 },
 };
 
 static const struct datasrc_info_t info = {
@@ -40,11 +42,11 @@ static const struct datasrc_info_t info = {
     .max = 1.0,
     .nvalues = 1,
     
-    .nfg = 1,
+    .nfg = 2,
     .value_labels = labels,
     .default_fg = default_fg,
     
-    .nbg = 1,
+    .nbg = 2,
     .default_bg = default_bg,
 };
 
@@ -104,6 +106,7 @@ static void battery_read_data(data_per_batt *ptr)
     
     gint32 full = 0, cur = 0;
     
+    // fixme: 重い…… sysfs から読めば、ちったぁましになるかしら…
     if ((fp = fopen("/proc/acpi/battery/BAT0/info", "rt")) != NULL) {
 	while (fgets(buf, sizeof buf, fp) != NULL) {
 	    gint32 n;
@@ -117,11 +120,11 @@ static void battery_read_data(data_per_batt *ptr)
     if ((fp = fopen("/proc/acpi/battery/BAT0/state", "rt")) != NULL) {
 	while (fgets(buf, sizeof buf, fp) != NULL) {
 	    gint32 n;
+	    char bf[32];
 	    if (sscanf(buf, "remaining capacity: %" G_GINT32_FORMAT " mWh", &n) == 1)
 		cur = n;
-	    else if (strncmp(buf, "charging state:", 15) == 0) {
-		if (strstr(buf, "charging") != NULL)
-		    ptr->charging = TRUE;
+	    else if (sscanf(buf, "charging state: %s", bf) == 1 && strcmp(bf, "charging") == 0) {
+		ptr->charging = TRUE;
 	    }
 	}
 	
@@ -151,6 +154,8 @@ static MccValue *battery_get(struct datasrc_context_t *w0)
     
     MccValue *value = mcc_value_new(1);
     mcc_value_set_value(value, 0, work.newdata->ratio);
+    mcc_value_set_foreground(value, 0, work.newdata->charging ? 1 : 0);
+    mcc_value_set_background(value, work.newdata->ac ? 1 : 0);
     
     return value;
 }
