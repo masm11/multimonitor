@@ -100,7 +100,6 @@ static MccValue *cpufreq_get(struct datasrc_context_t *w0)
 {
     struct cpufreq_t *ww = &work;
     struct cpufreq_work_t *w = datasrc_context_ptr(w0);
-    int i;
     
     MccValue *value = mcc_value_new(1);
     mcc_value_set_value(value, 0, ww->newdata[w->idx]);
