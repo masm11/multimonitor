@@ -17,6 +17,7 @@ static struct battery_t {
     gint nbatt;
     data_per_batt *olddata;
     data_per_batt *newdata;
+    gint32 last_full_capacity;
 } work;
 
 struct battery_work_t {
@@ -50,6 +51,7 @@ static const struct datasrc_info_t info = {
     .default_bg = default_bg,
 };
 
+static gint32 battery_read_last_full_capacity(void);
 static void battery_read_data(data_per_batt *ptr);
 
 static void battery_init(void)
@@ -61,6 +63,7 @@ static void battery_init(void)
     ww->nbatt = 1;
     ww->olddata = g_new0(data_per_batt, ww->nbatt);
     ww->newdata = g_new0(data_per_batt, ww->nbatt);
+    ww->last_full_capacity = battery_read_last_full_capacity();
     
     battery_read_data(ww->newdata);
     memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata);
@@ -84,6 +87,25 @@ static void battery_fini(void)
     ww->newdata = NULL;
 }
 
+static gint32 battery_read_last_full_capacity(void)
+{
+    FILE *fp;
+    gint32 full;
+    char buf[1024];
+    
+    if ((fp = fopen("/proc/acpi/battery/BAT0/info", "rt")) != NULL) {
+	while (fgets(buf, sizeof buf, fp) != NULL) {
+	    gint32 n;
+	    if (sscanf(buf, "last full capacity: %" G_GINT32_FORMAT " mWh", &n) == 1)
+		full = n;
+	}
+	
+	fclose(fp);
+    }
+    
+    return full;
+}
+
 static void battery_read_data(data_per_batt *ptr)
 {
     char buf[1024];
@@ -104,18 +126,7 @@ static void battery_read_data(data_per_batt *ptr)
 	fclose(fp);
     }
     
-    gint32 full = 0, cur = 0;
-    
-    // fixme: 重い…… sysfs から読めば、ちったぁましになるかしら…
-    if ((fp = fopen("/proc/acpi/battery/BAT0/info", "rt")) != NULL) {
-	while (fgets(buf, sizeof buf, fp) != NULL) {
-	    gint32 n;
-	    if (sscanf(buf, "last full capacity: %" G_GINT32_FORMAT " mWh", &n) == 1)
-		full = n;
-	}
-	
-	fclose(fp);
-    }
+    gint32 cur = 0;
     
     if ((fp = fopen("/proc/acpi/battery/BAT0/state", "rt")) != NULL) {
 	while (fgets(buf, sizeof buf, fp) != NULL) {
@@ -131,8 +142,8 @@ static void battery_read_data(data_per_batt *ptr)
 	fclose(fp);
     }
     
-    if (full > 0)
-	ptr->ratio = (gdouble) cur / full;
+    if (work.last_full_capacity > 0)
+	ptr->ratio = (gdouble) cur / work.last_full_capacity;
 }
 
 static struct datasrc_context_t *battery_new(void)
