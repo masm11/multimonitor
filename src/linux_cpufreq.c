@@ -4,6 +4,7 @@
 #include <glib.h>
 #include "mccgraph.h"
 #include "mccvalue.h"
+#define DATASRC_CONTEXT_T cpufreq_work_t
 #include "datasrc.h"
 
 #define NR_CPU 2
@@ -79,7 +80,7 @@ static void cpufreq_read_data(data_per_cpu *ptr, gint nr)
     }
 }
 
-static void *cpufreq_new(void)
+static struct datasrc_context_t *cpufreq_new(void)
 {
     struct cpufreq_work_t *w = g_new0(struct cpufreq_work_t, 1);
     
@@ -87,18 +88,18 @@ static void *cpufreq_new(void)
     
     w->idx = idx++ % (work.ncpu);
     
-    return w;
+    return datasrc_context_base_ptr(w);
 }
 
-static void cpufreq_destroy(void *w0)
+static void cpufreq_destroy(struct datasrc_context_t *w0)
 {
-    struct cpufreq_work_t *w = w0;
+    struct cpufreq_work_t *w = datasrc_context_ptr(w0);
 }
 
-static MccValue *cpufreq_get(void *w0)
+static MccValue *cpufreq_get(struct datasrc_context_t *w0)
 {
     struct cpufreq_t *ww = &work;
-    struct cpufreq_work_t *w = w0;
+    struct cpufreq_work_t *w = datasrc_context_ptr(w0);
     int i;
     
     MccValue *value = mcc_value_new(1);
@@ -107,7 +108,7 @@ static MccValue *cpufreq_get(void *w0)
     return value;
 }
 
-static const struct datasrc_info_t *cpufreq_info(void *w0)
+static const struct datasrc_info_t *cpufreq_info(struct datasrc_context_t *w0)
 {
     return &work.info;
 }

@@ -4,6 +4,14 @@
 #include <glib.h>
 #include "mccvalue.h"
 
+struct datasrc_context_t;
+static inline struct DATASRC_CONTEXT_T *datasrc_context_ptr(struct datasrc_context_t *p) {
+    return (struct DATASRC_CONTEXT_T *) p;
+}
+static inline struct datasrc_context_t *datasrc_context_base_ptr(struct DATASRC_CONTEXT_T *p) {
+    return (struct datasrc_context_t *) p;
+}
+
 struct datasrc_info_t {
     gdouble min, max;
     gint nvalues;
@@ -14,13 +22,13 @@ struct datasrc_t {
     void (*sread)(void);
     void (*sfini)(void);
     
-    void *(*new)(void);
-    MccValue *(*get)(void *);
-    const struct datasrc_info_t *(*info)(void *);
-    void (*destroy)(void *);
+    struct datasrc_context_t *(*new)(void);
+    MccValue *(*get)(struct datasrc_context_t *);
+    const struct datasrc_info_t *(*info)(struct datasrc_context_t *);
+    void (*destroy)(struct datasrc_context_t *);
 };
 
 extern struct datasrc_t linux_cpuload_datasrc;
 extern struct datasrc_t linux_cpufreq_datasrc;
 
-#endif	/* ifndef OPS_H__INCLUDED */
+#endif	/* ifndef DATASRC_H__INCLUDED */

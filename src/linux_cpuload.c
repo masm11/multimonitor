@@ -4,6 +4,7 @@
 #include <glib.h>
 #include "mccgraph.h"
 #include "mccvalue.h"
+#define DATASRC_CONTEXT_T cpuload_work_t
 #include "datasrc.h"
 
 #define NR_CPU 2
@@ -82,7 +83,7 @@ static void cpuload_read_data(data_per_cpu *ptr, gint nr)
     fclose(fp);
 }
 
-static void *cpuload_new(void)
+static struct datasrc_context_t *cpuload_new(void)
 {
     struct cpuload_work_t *w = g_new0(struct cpuload_work_t, 1);
     
@@ -90,18 +91,18 @@ static void *cpuload_new(void)
     
     w->idx = idx++ % (work.ncpu + 1);
     
-    return w;
+    return datasrc_context_base_ptr(w);
 }
 
-static void cpuload_destroy(void *w0)
+static void cpuload_destroy(struct datasrc_context_t *w0)
 {
-    struct cpuload_work_t *w = w0;
+    struct cpuload_work_t *w = datasrc_context_ptr(w0);
 }
 
-static MccValue *cpuload_get(void *w0)
+static MccValue *cpuload_get(struct datasrc_context_t *w0)
 {
     struct cpuload_t *ww = &work;
-    struct cpuload_work_t *w = w0;
+    struct cpuload_work_t *w = datasrc_context_ptr(w0);
     int i;
     
     gdouble vals[NR_DATA];
@@ -134,7 +135,7 @@ static MccValue *cpuload_get(void *w0)
     return value;
 }
 
-static const struct datasrc_info_t *cpuload_info(void *w0)
+static const struct datasrc_info_t *cpuload_info(struct datasrc_context_t *w0)
 {
     return &work.info;
 }
