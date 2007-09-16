@@ -2,6 +2,7 @@
 #define DATASRC_H__INCLUDED
 
 #include <glib.h>
+#include <gdk/gdk.h>
 #include "mccvalue.h"
 
 struct datasrc_context_t;
@@ -15,6 +16,11 @@ static inline struct datasrc_context_t *datasrc_context_base_ptr(struct DATASRC_
 struct datasrc_info_t {
     gdouble min, max;
     gint nvalues;
+    
+    const gchar **value_labels;	// [nvalues]
+    const GdkColor *default_fg;	// [nvalues]
+    gint nbg;
+    const GdkColor *default_bg;	// [nbg]
 };
 
 struct datasrc_t {

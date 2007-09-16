@@ -23,6 +23,30 @@ struct cpuload_work_t {
     gint idx;
 };
 
+static const gchar *labels[] = {
+    "user",
+    "nice",
+    "sys",
+    "iowait",
+    "irq",
+    "softirq",
+    "steal",
+};
+
+static GdkColor default_fg[] = {
+    { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0xffff },	// user
+    { .pixel = 0, .red = 0xffff, .green = 0x0000, .blue = 0x0000 },	// nice
+    { .pixel = 0, .red = 0xffff, .green = 0x0000, .blue = 0xffff },	// sys
+    { .pixel = 0, .red = 0x0000, .green = 0xffff, .blue = 0x0000 },	// iowait
+    { .pixel = 0, .red = 0x0000, .green = 0xffff, .blue = 0xffff },	// irq
+    { .pixel = 0, .red = 0xffff, .green = 0xffff, .blue = 0x0000 },	// softirq
+    { .pixel = 0, .red = 0xffff, .green = 0xffff, .blue = 0xffff },	// steal
+};
+
+static GdkColor default_bg[] = {
+    { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
+};
+
 static void cpuload_read_data(data_per_cpu *ptr, gint nr);
 
 static void cpuload_init(void)
@@ -38,6 +62,10 @@ static void cpuload_init(void)
     ww->info.min = 0;
     ww->info.max = 1.0;
     ww->info.nvalues = 7;
+    ww->info.value_labels = labels;
+    ww->info.default_fg = default_fg;
+    ww->info.nbg = 1;
+    ww->info.default_bg = default_bg;
     
     cpuload_read_data(ww->newdata, ww->ncpu + 1);
     memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata * (ww->ncpu + 1));

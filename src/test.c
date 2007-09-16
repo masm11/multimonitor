@@ -21,9 +21,9 @@ static GtkWidget *box;
 static void update(GtkWidget *widget, gpointer data)
 {
     struct datasrc_t *datasrc = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
-    void *ptr = g_object_get_data(G_OBJECT(widget), "mcc-ptr");
+    struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(widget), "mcc-context");
     
-    MccValue *value = (*datasrc->get)(ptr);
+    MccValue *value = (*datasrc->get)(ctxt);
     mcc_graph_add(MCC_GRAPH(widget), value);
 }
 
@@ -56,11 +56,12 @@ int main(int argc, char **argv)
     for (i = 0; i < NR; i++) {
 	gint idx = idxs[i];
 	struct datasrc_t *datasrc = datasrc_list[idx];
-	void *ptr = (*datasrc->new)();
-	const struct datasrc_info_t *ip = (*datasrc->info)(ptr);
-	GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max);
+	struct datasrc_context_t *ctxt = (*datasrc->new)();
+	const struct datasrc_info_t *ip = (*datasrc->info)(ctxt);
+	GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max,
+		ip->default_fg, ip->nbg, ip->default_bg);
 	g_object_set_data(G_OBJECT(g), "mcc-datasrc", datasrc);
-	g_object_set_data(G_OBJECT(g), "mcc-ptr", ptr);
+	g_object_set_data(G_OBJECT(g), "mcc-context", ctxt);
 	gtk_widget_set_size_request(g, 50, 50);
 	gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
     }

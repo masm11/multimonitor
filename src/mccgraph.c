@@ -29,7 +29,11 @@ typedef struct _MccGraphPrivate {
     guint16 pix_width, pix_height;
     
     GdkGC *gc_copy;
-    GdkGC **gc_fg, *gc_bg;
+    GdkGC **gc_fg, **gc_bg;
+    
+    const GdkColor *fg;
+    gint nbg;
+    const GdkColor *bg;
     
     gint min, max;
 } MccGraphPrivate;
@@ -66,6 +70,10 @@ static void mcc_graph_init(MccGraph *self)
     
     self->priv->list = NULL;
     self->priv->listlen = 0;
+    
+    self->priv->fg = NULL;
+    self->priv->nbg = 0;
+    self->priv->bg = NULL;
     
     self->priv->min = 0;
     self->priv->max = 1.0;
@@ -139,33 +147,34 @@ static void create_gc(MccGraph *graph)
 	g_free(priv->gc_fg);
 	priv->gc_fg = NULL;
     }
-    if (priv->gc_bg != NULL)
-	g_object_unref(priv->gc_bg);
+    if (priv->gc_bg != NULL) {
+	for (i = 0; i < priv->nbg; i++) {
+	    if (priv->gc_bg[i] != NULL) {
+		g_object_unref(priv->gc_bg[i]);
+		priv->gc_bg[i] = NULL;
+	    }
+	}
+	g_free(priv->gc_bg);
+	priv->gc_bg = NULL;
+    }
     
     priv->gc_copy = gdk_gc_new(widget->window);		// fixme: no_window にしたいな。
     gdk_gc_set_function(priv->gc_copy, GDK_COPY);
     
-    GdkColor col;
-    
-    priv->gc_bg = gdk_gc_new(widget->window);
-    gdk_gc_set_function(priv->gc_bg, GDK_COPY);
-    gdk_color_parse("#000000", &col);
-    gdk_colormap_alloc_color(cmap, &col, FALSE, TRUE);
-    gdk_gc_set_foreground(priv->gc_bg, &col);
+    priv->gc_bg = g_new0(GdkGC *, priv->nbg);
+    for (i = 0; i < priv->nbg; i++) {
+	priv->gc_bg[i] = gdk_gc_new(widget->window);
+	gdk_gc_set_function(priv->gc_bg[i], GDK_COPY);
+	GdkColor col = priv->bg[i];
+	gdk_colormap_alloc_color(cmap, &col, FALSE, TRUE);
+	gdk_gc_set_foreground(priv->gc_bg[i], &col);
+    }
     
     priv->gc_fg = g_new0(GdkGC *, priv->nvalues);
     for (i = 0; i < priv->nvalues; i++) {
 	priv->gc_fg[i] = gdk_gc_new(widget->window);
 	gdk_gc_set_function(priv->gc_fg[i], GDK_COPY);
-#if 1
-	col.blue  = ((i + 1) & 1) ? 0xffff : 0;
-	col.red   = ((i + 1) & 2) ? 0xffff : 0;
-	col.green = ((i + 1) & 4) ? 0xffff : 0;
-#else
-	col.red = 0xffff * (i + 1) / priv->nvalues;
-	col.green = 0xffff * (i + 1) / priv->nvalues;
-	col.blue = 0xffff * (i + 1) / priv->nvalues;
-#endif
+	GdkColor col = priv->fg[i];
 	gdk_colormap_alloc_color(cmap, &col, FALSE, TRUE);
 	gdk_gc_set_foreground(priv->gc_fg[i], &col);
     }
@@ -191,7 +200,7 @@ static void create_pixmap(MccGraph *graph)
 	priv->pix_height = widget->allocation.height;
     }
     
-    gdk_draw_rectangle(priv->pixmap, priv->gc_bg, TRUE, 0, 0, priv->pix_width, priv->pix_height);
+    gdk_draw_rectangle(priv->pixmap, priv->gc_bg[0], TRUE, 0, 0, priv->pix_width, priv->pix_height);
     
     gint x;
     GList *lp;
@@ -221,7 +230,7 @@ static void shift_and_draw(MccGraph *graph)
 		1, 0, 0, 0, priv->pix_width - 1, priv->pix_height);
 	
 	guint x = priv->pix_width - 1;
-	gdk_draw_line(priv->pixmap, priv->gc_bg, x, 0, x, priv->pix_height);
+	gdk_draw_line(priv->pixmap, priv->gc_bg[0], x, 0, x, priv->pix_height);
 	MccValue *value = priv->list->data;
 	gint i, j;
 	for (i = priv->nvalues - 1; i >= 0; i--) {
@@ -260,7 +269,8 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
     shift_and_draw(graph);
 }
 
-GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max)
+GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
+	const GdkColor *fg, gint nbg, const GdkColor *bg)
 {
     MccGraph *graph;
     
@@ -268,6 +278,9 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max)
     graph->priv->nvalues = nvalues;
     graph->priv->min = min;
     graph->priv->max = max;
+    graph->priv->fg = fg;
+    graph->priv->nbg = nbg;
+    graph->priv->bg = bg;
     
     return GTK_WIDGET(graph);
 }

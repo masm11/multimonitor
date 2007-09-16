@@ -22,6 +22,18 @@ struct cpufreq_work_t {
     gint idx;
 };
 
+static const gchar *labels[] = {
+    "frequency",
+};
+
+static GdkColor default_fg[] = {
+    { .pixel = 0, .red = 0xffff, .green = 0xffff, .blue = 0xffff },
+};
+
+static GdkColor default_bg[] = {
+    { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
+};
+
 static void cpufreq_read_data(data_per_cpu *ptr, gint nr);
 
 static void cpufreq_init(void)
@@ -37,6 +49,10 @@ static void cpufreq_init(void)
     ww->info.min = 0;
     ww->info.max = 2001000000;
     ww->info.nvalues = 1;
+    ww->info.value_labels = labels;
+    ww->info.default_fg = default_fg;
+    ww->info.nbg = 1;
+    ww->info.default_bg = default_bg;
     
     cpufreq_read_data(ww->newdata, ww->ncpu);
     memcpy(ww->olddata, ww->newdata, sizeof *ww->olddata * ww->ncpu);
