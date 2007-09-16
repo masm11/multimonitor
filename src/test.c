@@ -1,14 +1,14 @@
 #include <gtk/gtk.h>
 #include "mccgraph.h"
 #include "mccvalue.h"
-#include "ops.h"
+#include "datasrc.h"
 
-static struct ops_t *ops_list[] = {
-    &linux_cpuload_ops,
-    &linux_cpufreq_ops,
+static struct datasrc_t *datasrc_list[] = {
+    &linux_cpuload_datasrc,
+    &linux_cpufreq_datasrc,
 };
 
-#define NOPS (sizeof ops_list / sizeof ops_list[0])
+#define NDATASRC (sizeof datasrc_list / sizeof datasrc_list[0])
 
 static gint idxs[] = {
     0, 0, 0, 1, 1,
@@ -20,10 +20,10 @@ static GtkWidget *box;
 
 static void update(GtkWidget *widget, gpointer data)
 {
-    struct ops_t *ops = g_object_get_data(G_OBJECT(widget), "mcc-ops");
+    struct datasrc_t *datasrc = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
     void *ptr = g_object_get_data(G_OBJECT(widget), "mcc-ptr");
     
-    MccValue *value = (*ops->get)(ptr);
+    MccValue *value = (*datasrc->get)(ptr);
     mcc_graph_add(MCC_GRAPH(widget), value);
 }
 
@@ -31,8 +31,8 @@ static gboolean timer(gpointer data)
 {
     int i;
     
-    for (i = 0; i < NOPS; i++)
-	(*ops_list[i]->sread)();
+    for (i = 0; i < NDATASRC; i++)
+	(*datasrc_list[i]->sread)();
     
     gtk_container_foreach(GTK_CONTAINER(box), update, NULL);
     
@@ -45,8 +45,8 @@ int main(int argc, char **argv)
     
     gtk_init(&argc, &argv);
     
-    for (i = 0; i < NOPS; i++)
-	(*ops_list[i]->sinit)();
+    for (i = 0; i < NDATASRC; i++)
+	(*datasrc_list[i]->sinit)();
     
     GtkWidget *top = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     
@@ -55,11 +55,11 @@ int main(int argc, char **argv)
     
     for (i = 0; i < NR; i++) {
 	gint idx = idxs[i];
-	struct ops_t *ops = ops_list[idx];
-	void *ptr = (*ops->new)();
-	const struct info_t *ip = (*ops->info)(ptr);
+	struct datasrc_t *datasrc = datasrc_list[idx];
+	void *ptr = (*datasrc->new)();
+	const struct datasrc_info_t *ip = (*datasrc->info)(ptr);
 	GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max);
-	g_object_set_data(G_OBJECT(g), "mcc-ops", ops);
+	g_object_set_data(G_OBJECT(g), "mcc-datasrc", datasrc);
 	g_object_set_data(G_OBJECT(g), "mcc-ptr", ptr);
 	gtk_widget_set_size_request(g, 50, 50);
 	gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
@@ -71,8 +71,8 @@ int main(int argc, char **argv)
     
     gtk_main();
     
-    for (i = 0; i < NOPS; i++)
-	(*ops_list[i]->sfini)();
+    for (i = 0; i < NDATASRC; i++)
+	(*datasrc_list[i]->sfini)();
     
     return 0;
 }

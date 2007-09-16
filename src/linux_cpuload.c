@@ -4,7 +4,7 @@
 #include <glib.h>
 #include "mccgraph.h"
 #include "mccvalue.h"
-#include "ops.h"
+#include "datasrc.h"
 
 #define NR_CPU 2
 #define NR_DATA 8
@@ -15,7 +15,7 @@ static struct cpuload_t {
     gint ncpu;
     data_per_cpu *olddata;
     data_per_cpu *newdata;
-    struct info_t info;
+    struct datasrc_info_t info;
 } work;
 
 struct cpuload_work_t {
@@ -134,12 +134,12 @@ static MccValue *cpuload_get(void *w0)
     return value;
 }
 
-static const struct info_t *cpuload_info(void *w0)
+static const struct datasrc_info_t *cpuload_info(void *w0)
 {
     return &work.info;
 }
 
-struct ops_t linux_cpuload_ops = {
+struct datasrc_t linux_cpuload_datasrc = {
     .sinit = cpuload_init,
     .sread = cpuload_read,
     .sfini = cpuload_fini,

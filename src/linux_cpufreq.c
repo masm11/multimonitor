@@ -4,7 +4,7 @@
 #include <glib.h>
 #include "mccgraph.h"
 #include "mccvalue.h"
-#include "ops.h"
+#include "datasrc.h"
 
 #define NR_CPU 2
 
@@ -14,7 +14,7 @@ static struct cpufreq_t {
     gint ncpu;
     data_per_cpu *olddata;
     data_per_cpu *newdata;
-    struct info_t info;
+    struct datasrc_info_t info;
 } work;
 
 struct cpufreq_work_t {
@@ -107,12 +107,12 @@ static MccValue *cpufreq_get(void *w0)
     return value;
 }
 
-static const struct info_t *cpufreq_info(void *w0)
+static const struct datasrc_info_t *cpufreq_info(void *w0)
 {
     return &work.info;
 }
 
-struct ops_t linux_cpufreq_ops = {
+struct datasrc_t linux_cpufreq_datasrc = {
     .sinit = cpufreq_init,
     .sread = cpufreq_read,
     .sfini = cpufreq_fini,
