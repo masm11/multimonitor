@@ -170,7 +170,7 @@ static void battery_read_data(data_per_batt *ptr)
 	ptr->ratio = (gdouble) cur / work.last_full_capacity;
 }
 
-static struct datasrc_context_t *battery_new(void)
+static struct datasrc_context_t *battery_new(gint subidx)
 {
     struct battery_work_t *w = g_new0(struct battery_work_t, 1);
     

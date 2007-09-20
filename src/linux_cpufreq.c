@@ -123,13 +123,11 @@ static void cpufreq_read_data(data_per_cpu *ptr, gint nr)
     }
 }
 
-static struct datasrc_context_t *cpufreq_new(void)
+static struct datasrc_context_t *cpufreq_new(gint subidx)
 {
     struct cpufreq_work_t *w = g_new0(struct cpufreq_work_t, 1);
     
-    static gint idx = 0;
-    
-    w->idx = idx++ % (work.ncpu);
+    w->idx = subidx;
     w->info = info;
     w->info.sublabel = sublabels[w->idx];
     

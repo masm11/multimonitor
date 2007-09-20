@@ -43,7 +43,7 @@ struct datasrc_t {
     void (*sfini)(void);
     const struct datasrc_info_t *(*sinfo)(void);
     
-    struct datasrc_context_t *(*new)(void);
+    struct datasrc_context_t *(*new)(gint subidx);
     MccValue *(*get)(struct datasrc_context_t *);
     const struct datasrc_context_info_t *(*info)(struct datasrc_context_t *);
     void (*destroy)(struct datasrc_context_t *);

@@ -45,7 +45,7 @@ static gboolean timer(gpointer data)
 
 void add_graph(struct datasrc_t *src, gint subidx)
 {
-    struct datasrc_context_t *ctxt = (*src->new)();
+    struct datasrc_context_t *ctxt = (*src->new)(subidx);
     const struct datasrc_context_info_t *ip = (*src->info)(ctxt);
     GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max,
 	    ip->nfg, ip->default_fg, ip->nbg, ip->default_bg);

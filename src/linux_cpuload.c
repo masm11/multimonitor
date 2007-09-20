@@ -138,13 +138,11 @@ static void cpuload_read_data(data_per_cpu *ptr, gint nr)
     fclose(fp);
 }
 
-static struct datasrc_context_t *cpuload_new(void)
+static struct datasrc_context_t *cpuload_new(gint subidx)
 {
     struct cpuload_work_t *w = g_new0(struct cpuload_work_t, 1);
     
-    static gint idx = 0;
-    
-    w->idx = idx++ % (work.ncpu + 1);
+    w->idx = subidx;
     w->info = info;
     w->info.sublabel = sublabels[w->idx];
     

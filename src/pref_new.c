@@ -116,5 +116,11 @@ GtkWidget *preferences_new_create(GtkWidget *graph_box, const struct datasrc_t *
     gtk_widget_show(w->btn);
     gtk_box_pack_end(GTK_BOX(hbox), w->btn, FALSE, FALSE, 0);
     
+    {
+	GtkTreeIter iter;
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter))
+	    gtk_tree_selection_select_iter(sel, &iter);
+    }
+    
     return w->vbox;
 }
