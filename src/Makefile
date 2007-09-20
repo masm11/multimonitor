@@ -1,6 +1,6 @@
 all: test
 
-SRCS = test.c datasrc.h mccgraph.c mccgraph.h mccvalue.c mccvalue.h linux_cpuload.c linux_cpufreq.c linux_battery.c preferences.c pref_new.c
+SRCS = test.c datasrc.h mccgraph.c mccgraph.h mccvalue.c mccvalue.h linux_cpuload.c linux_cpufreq.c linux_battery.c preferences.c
 
 test: $(SRCS)
 	rm -f test

@@ -43,7 +43,7 @@ static gboolean timer(gpointer data)
     return TRUE;
 }
 
-void add_graph(struct datasrc_t *src, gint subidx)
+GtkWidget *add_graph(struct datasrc_t *src, gint subidx)
 {
     struct datasrc_context_t *ctxt = (*src->new)(subidx);
     const struct datasrc_context_info_t *ip = (*src->info)(ctxt);
@@ -54,6 +54,8 @@ void add_graph(struct datasrc_t *src, gint subidx)
     gtk_widget_set_size_request(g, 50, 50);
     gtk_widget_show(g);
     gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
+    
+    return g;
 }
 
 int main(int argc, char **argv)
