@@ -19,10 +19,16 @@ static struct cpufreq_t {
 
 struct cpufreq_work_t {
     gint idx;
+    
+    struct datasrc_context_info_t info;
 };
 
-static const gchar * const labels[] = {
+static const gchar * const fg_labels[] = {
     "frequency",
+};
+
+static const gchar * const bg_labels[] = {
+    "bg",
 };
 
 static const GdkColor default_fg[] = {
@@ -33,17 +39,35 @@ static const GdkColor default_bg[] = {
     { .pixel = 0, .red = 0x0000, .green = 0x0000, .blue = 0x0000 },
 };
 
-static const struct datasrc_info_t info = {
+static const gchar *sublabels[] = {
+    "cpu0",
+    "cpu1",
+    NULL,
+};
+
+static const struct datasrc_info_t sinfo = {
+    .src = &linux_cpufreq_datasrc,
+    
+    .label = "cpufreq",
+    .sublabels = sublabels,
+};
+
+static const struct datasrc_context_info_t info = {
+    .src = &linux_cpufreq_datasrc,
+    
     .min = 0.0,
     .max = 2001000000,
     .nvalues = 1,
     
     .nfg = 1,
-    .value_labels = labels,
+    .fg_labels = fg_labels,
     .default_fg = default_fg,
     
     .nbg = 1,
+    .bg_labels = bg_labels,
     .default_bg = default_bg,
+    
+    .sublabel = NULL,
 };
 
 static void cpufreq_read_data(data_per_cpu *ptr, gint nr);
@@ -106,6 +130,8 @@ static struct datasrc_context_t *cpufreq_new(void)
     static gint idx = 0;
     
     w->idx = idx++ % (work.ncpu);
+    w->info = info;
+    w->info.sublabel = sublabels[w->idx];
     
     return datasrc_context_base_ptr(w);
 }
@@ -126,13 +152,20 @@ static MccValue *cpufreq_get(struct datasrc_context_t *w0)
     return value;
 }
 
-static const struct datasrc_info_t *cpufreq_info(struct datasrc_context_t *w0)
+static const struct datasrc_info_t *cpufreq_sinfo(void)
 {
-    return &info;
+    return &sinfo;
+}
+
+static const struct datasrc_context_info_t *cpufreq_info(struct datasrc_context_t *w0)
+{
+    struct cpufreq_work_t *w = datasrc_context_ptr(w0);
+    return &w->info;
 }
 
 struct datasrc_t linux_cpufreq_datasrc = {
     .sinit = cpufreq_init,
+    .sinfo = cpufreq_sinfo,
     .sread = cpufreq_read,
     .sfini = cpufreq_fini,
     

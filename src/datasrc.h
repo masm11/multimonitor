@@ -14,25 +14,38 @@ static inline struct datasrc_context_t *datasrc_context_base_ptr(struct DATASRC_
 }
 
 struct datasrc_info_t {
+    struct datasrc_t *src;
+    
+    const gchar *label;
+    const gchar **sublabels;
+};
+
+struct datasrc_context_info_t {
+    struct datasrc_t *src;
+    
     gdouble min, max;
     gint nvalues;
     
     gint nfg;
-    const gchar * const *value_labels;	// [nfg]
+    const gchar * const *fg_labels;	// [nfg]
     const GdkColor *default_fg;		// [nfg]
     
     gint nbg;
-    const GdkColor *default_bg;	// [nbg]
+    const gchar * const *bg_labels;	// [nbg]
+    const GdkColor *default_bg;		// [nbg]
+    
+    const gchar *sublabel;
 };
 
 struct datasrc_t {
     void (*sinit)(void);
     void (*sread)(void);
     void (*sfini)(void);
+    const struct datasrc_info_t *(*sinfo)(void);
     
     struct datasrc_context_t *(*new)(void);
     MccValue *(*get)(struct datasrc_context_t *);
-    const struct datasrc_info_t *(*info)(struct datasrc_context_t *);
+    const struct datasrc_context_info_t *(*info)(struct datasrc_context_t *);
     void (*destroy)(struct datasrc_context_t *);
 };
 

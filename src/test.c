@@ -3,16 +3,19 @@
 #include "mccvalue.h"
 #include "datasrc.h"
 
-static struct datasrc_t *datasrc_list[] = {
+extern struct datasrc_t *datasrc_list[];
+
+struct datasrc_t *datasrc_list[] = {
     &linux_cpuload_datasrc,
     &linux_cpufreq_datasrc,
     &linux_battery_datasrc,
+    NULL,
 };
 
-#define NDATASRC (sizeof datasrc_list / sizeof datasrc_list[0])
+#define NDATASRC (sizeof datasrc_list / sizeof datasrc_list[0] - 1)
 
 static gint idxs[] = {
-    0, 0, 0, 1, 1, 2,
+    0, 0, 0, 1, 1,
 };
 
 #define NR (sizeof idxs / sizeof idxs[0])
@@ -40,6 +43,19 @@ static gboolean timer(gpointer data)
     return TRUE;
 }
 
+void add_graph(struct datasrc_t *src, gint subidx)
+{
+    struct datasrc_context_t *ctxt = (*src->new)();
+    const struct datasrc_context_info_t *ip = (*src->info)(ctxt);
+    GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max,
+	    ip->nfg, ip->default_fg, ip->nbg, ip->default_bg);
+    g_object_set_data(G_OBJECT(g), "mcc-datasrc", src);
+    g_object_set_data(G_OBJECT(g), "mcc-context", ctxt);
+    gtk_widget_set_size_request(g, 50, 50);
+    gtk_widget_show(g);
+    gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
+}
+
 int main(int argc, char **argv)
 {
     int i;
@@ -57,19 +73,14 @@ int main(int argc, char **argv)
     for (i = 0; i < NR; i++) {
 	gint idx = idxs[i];
 	struct datasrc_t *datasrc = datasrc_list[idx];
-	struct datasrc_context_t *ctxt = (*datasrc->new)();
-	const struct datasrc_info_t *ip = (*datasrc->info)(ctxt);
-	GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max,
-		ip->nfg, ip->default_fg, ip->nbg, ip->default_bg);
-	g_object_set_data(G_OBJECT(g), "mcc-datasrc", datasrc);
-	g_object_set_data(G_OBJECT(g), "mcc-context", ctxt);
-	gtk_widget_set_size_request(g, 50, 50);
-	gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
+	add_graph(datasrc, 0);
     }
     
     gtk_widget_show_all(top);
     
     g_timeout_add(100, timer, NULL);
+    
+    preferences_create(box, datasrc_list);
     
     gtk_main();
     

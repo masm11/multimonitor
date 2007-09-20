@@ -22,10 +22,17 @@ static struct battery_t {
 
 struct battery_work_t {
     gint idx;
+    struct datasrc_context_info_t info;
 };
 
-static const gchar * const labels[] = {
-    "ratio",
+static const gchar * const fg_labels[] = {
+    "not charging",
+    "charging",
+};
+
+static const gchar * const bg_labels[] = {
+    "AC off",
+    "AC on",
 };
 
 static const GdkColor default_fg[] = {
@@ -38,17 +45,34 @@ static const GdkColor default_bg[] = {
     { .pixel = 0, .red = 0x8000, .green = 0x0000, .blue = 0x0000 },
 };
 
-static const struct datasrc_info_t info = {
+static const gchar *sublabels[] = {
+    "battery",
+    NULL
+};
+
+static const struct datasrc_info_t sinfo = {
+    .src = &linux_battery_datasrc,
+    
+    .label = "battery",
+    .sublabels = sublabels,
+};
+
+static const struct datasrc_context_info_t info = {
+    .src = &linux_battery_datasrc,
+    
     .min = 0.0,
     .max = 1.0,
     .nvalues = 1,
     
     .nfg = 2,
-    .value_labels = labels,
+    .fg_labels = fg_labels,
     .default_fg = default_fg,
     
     .nbg = 2,
+    .bg_labels = bg_labels,
     .default_bg = default_bg,
+    
+    .sublabel = NULL,
 };
 
 static gint32 battery_read_last_full_capacity(void);
@@ -150,6 +174,9 @@ static struct datasrc_context_t *battery_new(void)
 {
     struct battery_work_t *w = g_new0(struct battery_work_t, 1);
     
+    w->info = info;
+    w->info.sublabel = sublabels[0];
+    
     return datasrc_context_base_ptr(w);
 }
 
@@ -171,13 +198,20 @@ static MccValue *battery_get(struct datasrc_context_t *w0)
     return value;
 }
 
-static const struct datasrc_info_t *battery_info(struct datasrc_context_t *w0)
+static const struct datasrc_info_t *battery_sinfo(void)
 {
-    return &info;
+    return &sinfo;
+}
+
+static const struct datasrc_context_info_t *battery_info(struct datasrc_context_t *w0)
+{
+    struct battery_work_t *w = datasrc_context_ptr(w0);
+    return &w->info;
 }
 
 struct datasrc_t linux_battery_datasrc = {
     .sinit = battery_init,
+    .sinfo = battery_sinfo,
     .sread = battery_read,
     .sfini = battery_fini,
     
