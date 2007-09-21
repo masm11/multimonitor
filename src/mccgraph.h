@@ -49,5 +49,9 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
 	gint nbg, const GdkColor *bg);
 void mcc_graph_add(MccGraph *graph, MccValue *value);
+void mcc_graph_get_fg(MccGraph *graph, int i, GdkColor *fg);
+void mcc_graph_get_bg(MccGraph *graph, int i, GdkColor *bg);
+void mcc_graph_set_fg(MccGraph *graph, int i, const GdkColor *fg);
+void mcc_graph_set_bg(MccGraph *graph, int i, const GdkColor *bg);
 
 #endif

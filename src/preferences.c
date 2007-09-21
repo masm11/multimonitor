@@ -18,6 +18,7 @@
 
 #include <gtk/gtk.h>
 #include <string.h>
+#include "mccgraph.h"
 #include "datasrc.h"
 
 enum {
@@ -146,7 +147,24 @@ struct list_work_t {
     GtkListStore *store;
 };
 
-static GtkWidget *list_create_page(struct datasrc_t *src, struct datasrc_context_t *ctxt)
+static void color_changed(GtkWidget *widget, gpointer userdata)
+{
+    MccGraph *graph = g_object_get_data(G_OBJECT(widget), "mcc-pref-graph");
+    const gchar *type = g_object_get_data(G_OBJECT(widget), "mcc-pref-color-type");
+    gint index = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "mcc-pref-color-index"));
+    GdkColor color;
+    
+    gtk_color_button_get_color(GTK_COLOR_BUTTON(widget), &color);
+    
+    if (strcmp(type, "fg") == 0)
+	mcc_graph_set_fg(graph, index, &color);
+    if (strcmp(type, "bg") == 0)
+	mcc_graph_set_bg(graph, index, &color);
+}
+
+static GtkWidget *list_create_page(
+	struct datasrc_t *src, struct datasrc_context_t *ctxt,
+	MccGraph *graph)
 {
     const struct datasrc_info_t *sip = (*src->sinfo)();
     const struct datasrc_context_info_t *ip = (*src->info)(ctxt);
@@ -174,7 +192,13 @@ static GtkWidget *list_create_page(struct datasrc_t *src, struct datasrc_context
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
 	
-	w = gtk_color_button_new_with_color(&ip->default_fg[i]);
+	GdkColor fg;
+	mcc_graph_get_fg(MCC_GRAPH(graph), i, &fg);
+	w = gtk_color_button_new_with_color(&fg);
+	g_object_set_data(G_OBJECT(w), "mcc-pref-graph", graph);
+	g_object_set_data(G_OBJECT(w), "mcc-pref-color-type", "fg");
+	g_object_set_data(G_OBJECT(w), "mcc-pref-color-index", GINT_TO_POINTER(i));
+	g_signal_connect(G_OBJECT(w), "color-set", G_CALLBACK(color_changed), NULL);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, i, i + 1);
     }
@@ -192,7 +216,13 @@ static GtkWidget *list_create_page(struct datasrc_t *src, struct datasrc_context
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
 	
-	w = gtk_color_button_new_with_color(&ip->default_bg[i]);
+	GdkColor bg;
+	mcc_graph_get_bg(MCC_GRAPH(graph), i, &bg);
+	w = gtk_color_button_new_with_color(&bg);
+	g_object_set_data(G_OBJECT(w), "mcc-pref-graph", graph);
+	g_object_set_data(G_OBJECT(w), "mcc-pref-color-type", "bg");
+	g_object_set_data(G_OBJECT(w), "mcc-pref-color-index", GINT_TO_POINTER(i));
+	g_signal_connect(G_OBJECT(w), "color-set", G_CALLBACK(color_changed), NULL);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, i, i + 1);
     }
@@ -227,7 +257,7 @@ static void list_add_page(GtkWidget *widget, gpointer data)
     struct datasrc_t *datasrc = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
     struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(widget), "mcc-context");
     
-    GtkWidget *page = list_create_page(datasrc, ctxt);
+    GtkWidget *page = list_create_page(datasrc, ctxt, MCC_GRAPH(widget));
     
     const struct datasrc_info_t *sip = (*datasrc->sinfo)();
     const struct datasrc_context_info_t *ip = (*datasrc->info)(ctxt);

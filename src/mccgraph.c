@@ -16,6 +16,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <string.h>
 #include "mccvalue.h"
 #include "mccgraph.h"
 
@@ -32,9 +33,9 @@ typedef struct _MccGraphPrivate {
     GdkGC **gc_fg, **gc_bg;
     
     gint nfg;
-    const GdkColor *fg;
+    GdkColor *fg;
     gint nbg;
-    const GdkColor *bg;
+    GdkColor *bg;
     
     gint min, max;
 } MccGraphPrivate;
@@ -273,6 +274,30 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
     shift_and_draw(graph);
 }
 
+void mcc_graph_get_fg(MccGraph *graph, int i, GdkColor *fg)
+{
+    *fg = graph->priv->fg[i];
+}
+
+void mcc_graph_get_bg(MccGraph *graph, int i, GdkColor *bg)
+{
+    *bg = graph->priv->bg[i];
+}
+
+void mcc_graph_set_fg(MccGraph *graph, int i, const GdkColor *fg)
+{
+    graph->priv->fg[i] = *fg;
+    create_gc(graph);
+    create_pixmap(graph);
+}
+
+void mcc_graph_set_bg(MccGraph *graph, int i, const GdkColor *bg)
+{
+    graph->priv->bg[i] = *bg;
+    create_gc(graph);
+    create_pixmap(graph);
+}
+
 GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
 	gint nbg, const GdkColor *bg)
@@ -284,9 +309,12 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
     graph->priv->min = min;
     graph->priv->max = max;
     graph->priv->nfg = nfg;
-    graph->priv->fg = fg;
+    graph->priv->fg = g_new0(GdkColor, nfg);
     graph->priv->nbg = nbg;
-    graph->priv->bg = bg;
+    graph->priv->bg = g_new0(GdkColor, nbg);
+    
+    memcpy(graph->priv->fg, fg, sizeof(GdkColor) * nfg);
+    memcpy(graph->priv->bg, bg, sizeof(GdkColor) * nbg);
     
     return GTK_WIDGET(graph);
 }
