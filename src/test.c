@@ -14,8 +14,13 @@ struct datasrc_t *datasrc_list[] = {
 
 #define NDATASRC (sizeof datasrc_list / sizeof datasrc_list[0] - 1)
 
-static gint idxs[] = {
-    0, 0, 0, 1, 1,
+static gint idxs[][2] = {
+    { 0, 0 },
+    { 0, 1 },
+    { 0, 2 },
+    { 1, 0 },
+    { 1, 1 },
+    { 2, 0 },
 };
 
 #define NR (sizeof idxs / sizeof idxs[0])
@@ -73,9 +78,10 @@ int main(int argc, char **argv)
     gtk_container_add(GTK_CONTAINER(top), box);
     
     for (i = 0; i < NR; i++) {
-	gint idx = idxs[i];
+	gint idx = idxs[i][0];
+	gint subidx = idxs[i][1];
 	struct datasrc_t *datasrc = datasrc_list[idx];
-	add_graph(datasrc, 0);
+	add_graph(datasrc, subidx);
     }
     
     gtk_widget_show_all(top);
