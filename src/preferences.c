@@ -42,7 +42,6 @@ static void list_add_graph(struct list_work_t *w, struct datasrc_t *src, gint su
 static void new_selected(GtkTreeSelection *sel, gpointer user_data)
 {
     struct new_work_t *w = user_data;
-    GtkTreeView *tree = gtk_tree_selection_get_tree_view(sel);
     GtkTreeModel *model;
     GtkTreeIter iter;
     if (gtk_tree_selection_get_selected(sel, &model, &iter)) {
@@ -233,7 +232,6 @@ static GtkWidget *list_create_page(
 static void list_selected(GtkTreeSelection *sel, gpointer user_data)
 {
     struct list_work_t *w = user_data;
-    GtkTreeView *tree = gtk_tree_selection_get_tree_view(sel);
     GtkTreeModel *model;
     GtkTreeIter iter;
     if (gtk_tree_selection_get_selected(sel, &model, &iter)) {

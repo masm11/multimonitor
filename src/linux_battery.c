@@ -175,6 +175,7 @@ static struct datasrc_context_t *battery_new(gint subidx)
     struct battery_work_t *w = g_new0(struct battery_work_t, 1);
     
     w->info = info;
+    w->info.sub_idx = subidx;
     w->info.sublabel = sublabels[0];
     
     return datasrc_context_base_ptr(w);

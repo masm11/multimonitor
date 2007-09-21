@@ -22,6 +22,7 @@ struct datasrc_info_t {
 
 struct datasrc_context_info_t {
     struct datasrc_t *src;
+    gint sub_idx;
     
     gdouble min, max;
     gint nvalues;

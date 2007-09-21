@@ -129,6 +129,7 @@ static struct datasrc_context_t *cpufreq_new(gint subidx)
     
     w->idx = subidx;
     w->info = info;
+    w->info.sub_idx = subidx;
     w->info.sublabel = sublabels[w->idx];
     
     return datasrc_context_base_ptr(w);
