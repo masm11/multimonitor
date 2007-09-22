@@ -140,7 +140,7 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	{
 	    gint width, height;
 	    gint size = 0;
-	    gtk_widget_get_size_request(graph, &width, &height);
+	    gtk_widget_get_size_request(GTK_WIDGET(graph), &width, &height);
 	    if (width >= 1)
 		size = width;
 	    if (height >= 1)
@@ -170,16 +170,11 @@ static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation, gpointer closure)
 {
     GtkWidget *oldbox = box;
-    int width, height;
     
     if (orientation == GTK_ORIENTATION_HORIZONTAL) {
 	box = gtk_hbox_new(FALSE, 1);
-	width = 50;
-	height = -1;
     } else {
 	box = gtk_vbox_new(FALSE, 1);
-	width = -1;
-	height = 50;
     }
     
     gtk_widget_show(box);
@@ -188,6 +183,16 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     while (list != NULL) {
 	GtkWidget *w = list->data;
 	g_object_ref(w);
+	
+	gint width, height;
+	gtk_widget_get_size_request(w, &width, &height);
+	if ((orientation == GTK_ORIENTATION_HORIZONTAL && width == -1) ||
+		(orientation == GTK_ORIENTATION_VERTICAL && height == -1)) {
+	    gint t = width;
+	    width = height;
+	    height = t;
+	}
+	
 	gtk_container_remove(GTK_CONTAINER(oldbox), w);
 	gtk_widget_set_size_request(w, width, height);
 	gtk_box_pack_start(GTK_BOX(box), w, FALSE, FALSE, 0);
