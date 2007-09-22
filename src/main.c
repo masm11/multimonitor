@@ -173,11 +173,11 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     int width, height;
     
     if (orientation == GTK_ORIENTATION_HORIZONTAL) {
-	box = gtk_hbox_new(FALSE, 0);
+	box = gtk_hbox_new(FALSE, 1);
 	width = 50;
 	height = -1;
     } else {
-	box = gtk_vbox_new(FALSE, 0);
+	box = gtk_vbox_new(FALSE, 1);
 	width = -1;
 	height = 50;
     }
@@ -231,9 +231,9 @@ static void plugin_start(XfcePanelPlugin *plg)
     gtk_container_add(GTK_CONTAINER(plugin), ev);
     
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
-	box = gtk_hbox_new(FALSE, 0);
+	box = gtk_hbox_new(FALSE, 1);
     } else {
-	box = gtk_vbox_new(FALSE, 0);
+	box = gtk_vbox_new(FALSE, 1);
     }
     gtk_container_add(GTK_CONTAINER(ev), box);
     
