@@ -13,21 +13,6 @@ struct datasrc_t *datasrc_list[] = {
     NULL,
 };
 
-#define NDATASRC (sizeof datasrc_list / sizeof datasrc_list[0] - 1)
-
-static gint idxs[][2] = {
-    { 0, 0 },
-#if 0
-    { 0, 1 },
-    { 0, 2 },
-    { 1, 0 },
-    { 1, 1 },
-    { 2, 0 },
-#endif
-};
-
-#define NR (sizeof idxs / sizeof idxs[0])
-
 static XfcePanelPlugin *plugin;
 static GtkWidget *ev;
 static GtkWidget *box;
@@ -43,14 +28,20 @@ static void update(GtkWidget *widget, gpointer data)
 
 static gboolean timer(gpointer data)
 {
-    int i;
-    
-    for (i = 0; i < NDATASRC; i++)
+    for (gint i = 0; datasrc_list[i] != NULL; i++)
 	(*datasrc_list[i]->sread)();
     
     gtk_container_foreach(GTK_CONTAINER(box), update, NULL);
     
     return TRUE;
+}
+
+static void graph_destroyed(GtkObject *object, gpointer userdata)
+{
+    GtkWidget *w = GTK_WIDGET(object);
+    struct datasrc_t *src = g_object_get_data(G_OBJECT(w), "mcc-datasrc");
+    struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(w), "mcc-context");
+    (*src->destroy)(ctxt);
 }
 
 GtkWidget *add_graph(struct datasrc_t *src, gint subidx)
@@ -61,6 +52,7 @@ GtkWidget *add_graph(struct datasrc_t *src, gint subidx)
 	    ip->nfg, ip->default_fg, ip->nbg, ip->default_bg);
     g_object_set_data(G_OBJECT(g), "mcc-datasrc", src);
     g_object_set_data(G_OBJECT(g), "mcc-context", ctxt);
+    g_signal_connect(g, "destroy", G_CALLBACK(graph_destroyed), NULL);
     
     int width, height;
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
@@ -107,7 +99,7 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	const struct datasrc_context_info_t *info = (*src->info)(ctxt);
 	
 	gint src_idx = -1;
-	for (gint i = 0; i < NDATASRC; i++) {
+	for (gint i = 0; datasrc_list[i] != NULL; i++) {
 	    if (datasrc_list[i] == src) {
 		src_idx = i;
 		break;
@@ -251,7 +243,10 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     GList *list = gtk_container_get_children(GTK_CONTAINER(oldbox));
     while (list != NULL) {
 	GtkWidget *w = list->data;
+	
 	g_object_ref(w);
+	
+	gtk_container_remove(GTK_CONTAINER(oldbox), w);
 	
 	gint width, height;
 	gtk_widget_get_size_request(w, &width, &height);
@@ -261,11 +256,12 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
 	    width = height;
 	    height = t;
 	}
-	
-	gtk_container_remove(GTK_CONTAINER(oldbox), w);
 	gtk_widget_set_size_request(w, width, height);
+	
 	gtk_box_pack_start(GTK_BOX(box), w, FALSE, FALSE, 0);
+	
 	g_object_unref(w);
+	
 	list = g_list_next(list);	// fixme: free
     }
     
@@ -284,7 +280,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 {
     plugin = plg;
     
-    for (int i = 0; i < NDATASRC; i++)
+    for (int i = 0; datasrc_list[i] != NULL; i++)
 	(*datasrc_list[i]->sinit)();
     
     g_signal_connect(plugin, "configure-plugin", G_CALLBACK(configure_cb), NULL);
@@ -324,7 +320,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     gtk_main();
     
-    for (int i = 0; i < NDATASRC; i++)
+    for (int i = 0; datasrc_list[i] != NULL; i++)
 	(*datasrc_list[i]->sfini)();
 }
 

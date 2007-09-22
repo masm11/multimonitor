@@ -175,9 +175,32 @@ static void size_changed(GtkSpinButton *spinbutton, gpointer userdata)
     gtk_widget_set_size_request(GTK_WIDGET(graph), width, height);
 }
 
+static void delete_cb(GtkButton *button, gpointer userdata)
+{
+    struct list_work_t *w = userdata;
+    GtkWidget *graph = g_object_get_data(G_OBJECT(button), "mcc-pref-graph");
+    GtkWidget *page = g_object_get_data(G_OBJECT(button), "mcc-pref-page");
+    
+    GtkTreeIter iter;
+    if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(w->store), &iter)) {
+	while (TRUE) {
+	    GtkWidget *p;
+	    gtk_tree_model_get(GTK_TREE_MODEL(w->store), &iter, LST_COL_PAGE, &p, -1);
+	    if (p == page) {
+		gtk_list_store_remove(w->store, &iter);
+		break;
+	    }
+	    gtk_tree_model_iter_next(GTK_TREE_MODEL(w->store), &iter);
+	}
+    }
+    
+    gtk_widget_destroy(page);
+    gtk_widget_destroy(graph);
+}
+
 static GtkWidget *list_create_page(
 	struct datasrc_t *src, struct datasrc_context_t *ctxt,
-	MccGraph *graph)
+	MccGraph *graph, struct list_work_t *lw)
 {
     const struct datasrc_info_t *sip = (*src->sinfo)();
     const struct datasrc_context_info_t *ip = (*src->info)(ctxt);
@@ -259,6 +282,15 @@ static GtkWidget *list_create_page(
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
     }
     
+    {
+	GtkWidget *w = gtk_button_new_with_label("Delete");
+	gtk_box_pack_start(GTK_BOX(vbox), w, FALSE, FALSE, 0);
+	g_object_set_data(G_OBJECT(w), "mcc-pref-graph", graph);
+	g_object_set_data(G_OBJECT(w), "mcc-pref-page", vbox);
+	g_signal_connect(w, "clicked", G_CALLBACK(delete_cb), lw);
+	gtk_widget_show(w);
+    }
+    
     return vbox;
 }
 
@@ -288,7 +320,7 @@ static void list_add_page(GtkWidget *widget, gpointer data)
     struct datasrc_t *datasrc = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
     struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(widget), "mcc-context");
     
-    GtkWidget *page = list_create_page(datasrc, ctxt, MCC_GRAPH(widget));
+    GtkWidget *page = list_create_page(datasrc, ctxt, MCC_GRAPH(widget), w);
     
     const struct datasrc_info_t *sip = (*datasrc->sinfo)();
     const struct datasrc_context_info_t *ip = (*datasrc->info)(ctxt);
