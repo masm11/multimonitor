@@ -154,6 +154,75 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
     xfce_rc_close(rc);
 }
 
+static void load_config(void)
+{
+    XfceRc *rc;
+    
+    gchar *rcfile = xfce_panel_plugin_save_location(plugin, FALSE);
+    if (rcfile == NULL)
+	return;
+    rc = xfce_rc_simple_open(rcfile, TRUE);
+    g_free(rcfile);
+    if (rc == NULL)
+	return;
+    
+    xfce_rc_set_group(rc, NULL);
+    gint num = xfce_rc_read_int_entry(rc, "num", 0);
+    
+    for (int no = 0; no < num; no++) {
+	char grp[16];
+	sprintf(grp, "graph%d", no);
+	xfce_rc_set_group(rc, grp);
+	
+	gint idx = xfce_rc_read_int_entry(rc, "datasrc_index", -1);
+	gint subidx = xfce_rc_read_int_entry(rc, "datasrc_subindex", -1);
+	if (idx < 0 || subidx < 0) {
+	    // これが得られなかったら、どうにもならん。
+	    continue;
+	}
+	
+	GtkWidget *g = add_graph(datasrc_list[idx], subidx);
+	MccGraph *graph = MCC_GRAPH(g);
+	
+	struct datasrc_t *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
+	struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(graph), "mcc-context");
+	const struct datasrc_context_info_t *info = (*src->info)(ctxt);
+	
+	for (int i = 0; i < info->nfg; i++) {
+	    GdkColor col;
+	    gchar key[64];
+	    sprintf(key, "fg%d", i);
+	    const gchar *cstr = xfce_rc_read_entry(rc, key, NULL);
+	    if (cstr != NULL && gdk_color_parse(cstr, &col))
+		mcc_graph_set_fg(graph, i, &col);
+	}
+	
+	for (int i = 0; i < info->nbg; i++) {
+	    GdkColor col;
+	    gchar key[64];
+	    sprintf(key, "bg%d", i);
+	    const gchar *cstr = xfce_rc_read_entry(rc, key, NULL);
+	    if (cstr != NULL && gdk_color_parse(cstr, &col))
+		mcc_graph_set_bg(graph, i, &col);
+	}
+	
+	{
+	    gint width, height;
+	    gint size = xfce_rc_read_int_entry(rc, "size", 0);
+	    if (size >= 1) {
+		gtk_widget_get_size_request(g, &width, &height);
+		if (width >= 1)
+		    width = size;
+		if (height >= 1)
+		    height = size;
+		gtk_widget_set_size_request(g, width, height);
+	    }
+	}
+    }
+    
+    xfce_rc_close(rc);
+}
+
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 {
 #if 0
@@ -240,16 +309,16 @@ static void plugin_start(XfcePanelPlugin *plg)
     } else {
 	box = gtk_vbox_new(FALSE, 1);
     }
+    gtk_widget_show(box);
     gtk_container_add(GTK_CONTAINER(ev), box);
     
-    for (int i = 0; i < NR; i++) {
-	gint idx = idxs[i][0];
-	gint subidx = idxs[i][1];
-	struct datasrc_t *datasrc = datasrc_list[idx];
-	add_graph(datasrc, subidx);
-    }
+    load_config();
     
-    gtk_widget_show(box);
+    GList *list = gtk_container_get_children(GTK_CONTAINER(box));
+    if (list == NULL) {
+	struct datasrc_t *datasrc = datasrc_list[0];
+	add_graph(datasrc, 0);
+    }
     
     g_timeout_add(100, timer, NULL);
     
