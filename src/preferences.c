@@ -161,6 +161,20 @@ static void color_changed(GtkWidget *widget, gpointer userdata)
 	mcc_graph_set_bg(graph, index, &color);
 }
 
+static void size_changed(GtkSpinButton *spinbutton, gpointer userdata)
+{
+    MccGraph *graph = userdata;
+    gint width, height;
+    gtk_widget_get_size_request(GTK_WIDGET(graph), &width, &height);
+    
+    gint size = gtk_spin_button_get_value_as_int(spinbutton);
+    if (width >= 1)
+	width = size;
+    if (height >= 1)
+	height = size;
+    gtk_widget_set_size_request(GTK_WIDGET(graph), width, height);
+}
+
 static GtkWidget *list_create_page(
 	struct datasrc_t *src, struct datasrc_context_t *ctxt,
 	MccGraph *graph)
@@ -224,6 +238,25 @@ static GtkWidget *list_create_page(
 	g_signal_connect(G_OBJECT(w), "color-set", G_CALLBACK(color_changed), NULL);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, i, i + 1);
+    }
+    
+    {
+	gint width, height;
+	gtk_widget_get_size_request(GTK_WIDGET(graph), &width, &height);
+	
+	tbl = gtk_table_new(1, 2, FALSE);
+	gtk_widget_show(tbl);
+	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
+	
+	w = gtk_label_new("Size");
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, 0, 1);
+	
+	w = gtk_spin_button_new_with_range(1, 1000, 1);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(w), width == -1 ? height : width);
+	g_signal_connect(w, "value-changed", G_CALLBACK(size_changed), graph);
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
     }
     
     return vbox;

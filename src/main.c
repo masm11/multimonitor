@@ -137,6 +137,17 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	    xfce_rc_write_entry(rc, key, buf);
 	}
 	
+	{
+	    gint width, height;
+	    gint size = 0;
+	    gtk_widget_get_size_request(graph, &width, &height);
+	    if (width >= 1)
+		size = width;
+	    if (height >= 1)
+		size = height;
+	    xfce_rc_write_int_entry(rc, "size", size);
+	}
+	
 	list = g_list_next(list);		// fixme: 解放
     }
     
@@ -191,6 +202,7 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 {
     preferences_create(box, datasrc_list);
+    // 戻ってきたら、preferences はもう閉じてる。
     save_config_cb(plugin, NULL);
 }
 
