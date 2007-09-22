@@ -29,6 +29,7 @@ static gint idxs[][2] = {
 #define NR (sizeof idxs / sizeof idxs[0])
 
 static XfcePanelPlugin *plugin;
+static GtkWidget *ev;
 static GtkWidget *box;
 
 static void update(GtkWidget *widget, gpointer data)
@@ -61,7 +62,16 @@ GtkWidget *add_graph(struct datasrc_t *src, gint subidx)
     g_object_set_data(G_OBJECT(g), "mcc-datasrc", src);
     g_object_set_data(G_OBJECT(g), "mcc-context", ctxt);
     
-    gtk_widget_set_size_request(g, 50, -1);
+    int width, height;
+    if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
+	width = 50;
+	height = -1;
+    } else {
+	width = -1;
+	height = 50;
+    }
+
+    gtk_widget_set_size_request(g, width, height);
     gtk_widget_show(g);
     gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
     
@@ -133,24 +143,49 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
     xfce_rc_close(rc);
 }
 
-static void change_size_cb(GtkWidget *w, gint size, gpointer closure)
+static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 {
 #if 0
     if (get_applet_vert(plugin))
 	gtk_widget_set_size_request(GTK_WIDGET(plugin), size, -1);
     else
 #endif
-    gtk_widget_set_size_request(GTK_WIDGET(plugin), -1, size);
-    
+	
     // gtk_container_foreach(GTK_CONTAINER(app->pack), change_size_iter, NULL);
+	
+    return FALSE;
 }
 
 static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation, gpointer closure)
 {
-#if 0
-    struct app_t *app = closure;
-    change_orient(app, orientation == GTK_ORIENTATION_VERTICAL);
-#endif
+    GtkWidget *oldbox = box;
+    int width, height;
+    
+    if (orientation == GTK_ORIENTATION_HORIZONTAL) {
+	box = gtk_hbox_new(FALSE, 0);
+	width = 50;
+	height = -1;
+    } else {
+	box = gtk_vbox_new(FALSE, 0);
+	width = -1;
+	height = 50;
+    }
+    
+    gtk_widget_show(box);
+    
+    GList *list = gtk_container_get_children(GTK_CONTAINER(oldbox));
+    while (list != NULL) {
+	GtkWidget *w = list->data;
+	g_object_ref(w);
+	gtk_container_remove(GTK_CONTAINER(oldbox), w);
+	gtk_widget_set_size_request(w, width, height);
+	gtk_box_pack_start(GTK_BOX(box), w, FALSE, FALSE, 0);
+	g_object_unref(w);
+	list = g_list_next(list);	// fixme: free
+    }
+    
+    gtk_widget_destroy(oldbox);
+    gtk_container_add(GTK_CONTAINER(ev), box);
 }
 
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
@@ -178,12 +213,16 @@ static void plugin_start(XfcePanelPlugin *plg)
 #endif
     xfce_panel_plugin_menu_show_configure(plugin);
     
-    GtkWidget *ev = gtk_event_box_new();
+    ev = gtk_event_box_new();
     gtk_widget_show(ev);
     xfce_panel_plugin_add_action_widget(plugin, ev);
     gtk_container_add(GTK_CONTAINER(plugin), ev);
     
-    box = gtk_hbox_new(FALSE, 0);
+    if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
+	box = gtk_hbox_new(FALSE, 0);
+    } else {
+	box = gtk_vbox_new(FALSE, 0);
+    }
     gtk_container_add(GTK_CONTAINER(ev), box);
     
     for (int i = 0; i < NR; i++) {
