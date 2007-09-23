@@ -1,3 +1,28 @@
+#if 1
+#include <gtk/gtk.h>
+#include "mccsrccpufreq.h"
+
+void add_graph(void){}
+
+int main(int argc, char **argv)
+{
+    gtk_init(&argc, &argv);
+    
+    MccDataSource *src = mcc_src_cpu_freq_new();
+    
+    while (TRUE) {
+	mcc_data_source_read(MCC_TYPE_SRC_CPU_FREQ);
+	MccValue *val = mcc_data_source_get(src);
+	sleep(1);
+    }
+    
+    g_object_unref(src);
+    
+    return 0;
+}
+
+#else
+
 #include <gtk/gtk.h>
 #include <libxfce4panel/xfce-panel-plugin.h>
 #include "mccgraph.h"
@@ -325,3 +350,4 @@ static void plugin_start(XfcePanelPlugin *plg)
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)
+#endif
