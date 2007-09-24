@@ -158,7 +158,11 @@ static gint calc_dynamic_scale(MccGraph *graph)
 	    max_v = v;
     }
     
-    return (gint) ceil(max_v);
+    gint scale = (gint) ceil((max_v - priv->min) / (priv->max - priv->min));
+    if (scale < 1)
+	scale = 1;
+    
+    return scale;
 }
 
 static void create_gc(MccGraph *graph)
