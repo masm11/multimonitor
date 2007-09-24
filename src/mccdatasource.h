@@ -52,6 +52,7 @@ struct _MccDataSource {
     GdkColor *default_bg;	// [nbg]
     
     gboolean dynamic_scaling;
+    gboolean add_on_tick;
     
     gchar *sublabel;
 };
@@ -61,6 +62,10 @@ struct _MccDataSourceClass {
     
     gchar *label;
     gchar **sublabels;
+    gint tick_per_read;
+    
+    gint tick_for_read;
+    gboolean has_new_data;
     
     void (*read)(MccDataSourceClass *datasrc_class);
     void (*set_subidx)(MccDataSource *src);

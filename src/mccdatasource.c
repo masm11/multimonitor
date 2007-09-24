@@ -126,8 +126,19 @@ void mcc_data_source_read(GType type)
     GObjectClass *klass = g_type_class_peek(type);
     if (klass != NULL && MCC_IS_DATA_SOURCE_CLASS(klass)) {
 	MccDataSourceClass *data_src_class = (MccDataSourceClass *) klass;
-	(*data_src_class->read)(data_src_class);
+	data_src_class->has_new_data = FALSE;
+	if (++data_src_class->tick_for_read >= data_src_class->tick_per_read) {
+	    data_src_class->tick_for_read = 0;
+	    (*data_src_class->read)(data_src_class);
+	    data_src_class->has_new_data = TRUE;
+	}
     }
+}
+
+gboolean mcc_data_source_has_new_data(MccDataSource *datasrc)
+{
+    MccDataSourceClass *datasrc_class = MCC_DATA_SOURCE_GET_CLASS(datasrc);
+    return datasrc_class->has_new_data;
 }
 
 MccValue *mcc_data_source_get(MccDataSource *datasrc)

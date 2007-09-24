@@ -19,8 +19,10 @@ static void update(GtkWidget *widget, gpointer data)
 {
     MccDataSource *src = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
     
-    MccValue *value = mcc_data_source_get(src);
-    mcc_graph_add(MCC_GRAPH(widget), value);
+    if (src->add_on_tick || mcc_data_source_has_new_data(src)) {
+	MccValue *value = mcc_data_source_get(src);
+	mcc_graph_add(MCC_GRAPH(widget), value);
+    }
 }
 
 static gboolean timer(gpointer data)
