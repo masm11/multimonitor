@@ -19,6 +19,7 @@
 #include <string.h>
 #include "mccsrccpuload.h"
 
+static gint cpuload_count_cpus(void);
 static void cpuload_read_data(data_per_cpu *ptr, gint nr);
 
 static void mcc_src_cpu_load_class_init(gpointer klass, gpointer class_data);
@@ -68,17 +69,18 @@ static void mcc_src_cpu_load_class_init(gpointer klass, gpointer class_data)
     gobject_class->finalize = mcc_src_cpu_load_finalize;
     
     datasrc_class->label = g_strdup("CPU Load");
-    datasrc_class->sublabels = g_new0(gchar *, 4);
-    datasrc_class->sublabels[0] = g_strdup("Total");
-    datasrc_class->sublabels[1] = g_strdup("CPU 0");
-    datasrc_class->sublabels[2] = g_strdup("CPU 1");
     datasrc_class->set_subidx = mcc_src_cpu_load_set_subidx;
     datasrc_class->read = mcc_src_cpu_load_read;
     datasrc_class->get = mcc_src_cpu_load_get;
     
-    src_class->ncpu = 2;
+    src_class->ncpu = cpuload_count_cpus();
     src_class->olddata = g_new0(data_per_cpu, src_class->ncpu + 1);
     src_class->newdata = g_new0(data_per_cpu, src_class->ncpu + 1);
+    
+    datasrc_class->sublabels = g_new0(gchar *, src_class->ncpu + 2);
+    datasrc_class->sublabels[0] = g_strdup("Total");
+    for (gint i = 0; i < src_class->ncpu; i++)
+	datasrc_class->sublabels[i + 1] = g_strdup_printf("CPU %d", i);
     
     cpuload_read_data(src_class->newdata, src_class->ncpu + 1);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * (src_class->ncpu + 1));
@@ -90,6 +92,28 @@ static void mcc_src_cpu_load_read(MccDataSourceClass *datasrc_class)
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * (src_class->ncpu + 1));
     cpuload_read_data(src_class->newdata, src_class->ncpu + 1);
+}
+
+static gint cpuload_count_cpus(void)
+{
+    FILE *fp;
+    
+    if ((fp = fopen("/proc/stat", "rt")) == NULL)
+	return 0;
+    
+    gint n;
+    for (n = 0; ; n++) {
+	char buf[1024];
+	if (fgets(buf, sizeof buf, fp) == NULL)
+	    break;
+	
+	if (strncmp(buf, "cpu", 3) != 0)
+	    break;
+    }
+    
+    fclose(fp);
+    
+    return n < 2 ? 0 : n - 1;
 }
 
 static void cpuload_read_data(data_per_cpu *ptr, gint nr)
@@ -115,14 +139,10 @@ static void cpuload_read_data(data_per_cpu *ptr, gint nr)
 
 static void mcc_src_cpu_load_init(GTypeInstance *obj, gpointer klass)
 {
-    MccSrcCpuLoad *self = MCC_SRC_CPU_LOAD(obj);
-    MccDataSource *data_source = &self->data_source;
 }
 
 static void mcc_src_cpu_load_finalize(GObject *object)
 {
-    MccSrcCpuLoad *src = MCC_SRC_CPU_LOAD(object);
-    
     (*G_OBJECT_CLASS(mcc_src_cpu_load_parent_class)->finalize)(object);
 }
 

@@ -106,14 +106,10 @@ static void loadavg_read_data(gdouble *ptr)
 
 static void mcc_src_load_avg_init(GTypeInstance *obj, gpointer klass)
 {
-    MccSrcLoadAvg *self = MCC_SRC_LOAD_AVG(obj);
-    MccDataSource *data_source = &self->data_source;
 }
 
 static void mcc_src_load_avg_finalize(GObject *object)
 {
-    MccSrcLoadAvg *src = MCC_SRC_LOAD_AVG(object);
-    
     (*G_OBJECT_CLASS(mcc_src_load_avg_parent_class)->finalize)(object);
 }
 

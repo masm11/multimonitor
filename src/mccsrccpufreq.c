@@ -19,6 +19,7 @@
 #include <string.h>
 #include "mccsrccpufreq.h"
 
+static gint cpufreq_get_cpus(void);
 static void cpufreq_read_data(gint64 *ptr, gint nr);
 
 static void mcc_src_cpu_freq_class_init(gpointer klass, gpointer class_data);
@@ -68,16 +69,17 @@ static void mcc_src_cpu_freq_class_init(gpointer klass, gpointer class_data)
     gobject_class->finalize = mcc_src_cpu_freq_finalize;
     
     datasrc_class->label = g_strdup("CPU Freq");
-    datasrc_class->sublabels = g_new0(gchar *, 3);
-    datasrc_class->sublabels[0] = g_strdup("CPU 0");
-    datasrc_class->sublabels[1] = g_strdup("CPU 1");
     datasrc_class->set_subidx = mcc_src_cpu_freq_set_subidx;
     datasrc_class->read = mcc_src_cpu_freq_read;
     datasrc_class->get = mcc_src_cpu_freq_get;
     
-    src_class->ncpu = 2;
+    src_class->ncpu = cpufreq_get_cpus();
     src_class->olddata = g_new0(gint64, src_class->ncpu);
     src_class->newdata = g_new0(gint64, src_class->ncpu);
+    
+    datasrc_class->sublabels = g_new0(gchar *, src_class->ncpu + 1);
+    for (gint i = 0; i < src_class->ncpu; i++)
+	datasrc_class->sublabels[i] = g_strdup_printf("CPU %d", i);
     
     cpufreq_read_data(src_class->newdata, src_class->ncpu);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * src_class->ncpu);
@@ -89,6 +91,18 @@ static void mcc_src_cpu_freq_read(MccDataSourceClass *datasrc_class)
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * src_class->ncpu);
     cpufreq_read_data(src_class->newdata, src_class->ncpu);
+}
+
+static gint cpufreq_get_cpus(void)
+{
+    for (gint n = 0; ; n++) {
+	FILE *fp;
+	char buf[1024];
+	sprintf(buf, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", n);
+	if ((fp = fopen(buf, "rt")) == NULL)
+	    return n;
+	fclose(fp);
+    }
 }
 
 static void cpufreq_read_data(gint64 *ptr, gint nr)
@@ -111,14 +125,10 @@ static void cpufreq_read_data(gint64 *ptr, gint nr)
 
 static void mcc_src_cpu_freq_init(GTypeInstance *obj, gpointer klass)
 {
-    MccSrcCpuFreq *self = MCC_SRC_CPU_FREQ(obj);
-    MccDataSource *data_source = &self->data_source;
 }
 
 static void mcc_src_cpu_freq_finalize(GObject *object)
 {
-    MccSrcCpuFreq *src = MCC_SRC_CPU_FREQ(object);
-    
     (*G_OBJECT_CLASS(mcc_src_cpu_freq_parent_class)->finalize)(object);
 }
 

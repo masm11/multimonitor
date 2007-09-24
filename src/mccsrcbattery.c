@@ -153,14 +153,10 @@ static void battery_read_data(data_per_batt *ptr, gint32 last_full_capacity)
 
 static void mcc_src_battery_init(GTypeInstance *obj, gpointer klass)
 {
-    MccSrcBattery *self = MCC_SRC_BATTERY(obj);
-    MccDataSource *data_source = &self->data_source;
 }
 
 static void mcc_src_battery_finalize(GObject *object)
 {
-    MccSrcBattery *src = MCC_SRC_BATTERY(object);
-    
     (*G_OBJECT_CLASS(mcc_src_battery_parent_class)->finalize)(object);
 }
 

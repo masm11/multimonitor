@@ -40,7 +40,6 @@ static GList *class_list = NULL;
 static void mcc_data_source_class_init(MccDataSourceClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-    MccDataSourceClass *datasrc_class = MCC_DATA_SOURCE_CLASS(klass);
     
     gobject_class->set_property = mcc_data_source_set_property;
     gobject_class->get_property = mcc_data_source_get_property;
