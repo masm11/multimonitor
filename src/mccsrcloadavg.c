@@ -67,11 +67,11 @@ static void mcc_src_load_avg_class_init(gpointer klass, gpointer class_data)
     
     gobject_class->finalize = mcc_src_load_avg_finalize;
     
-    datasrc_class->label = g_strdup("loadavg");
+    datasrc_class->label = g_strdup("Load AVG");
     datasrc_class->sublabels = g_new0(gchar *, 4);
-    datasrc_class->sublabels[0] = g_strdup("1min");
-    datasrc_class->sublabels[1] = g_strdup("5min");
-    datasrc_class->sublabels[2] = g_strdup("15min");
+    datasrc_class->sublabels[0] = g_strdup("1 min");
+    datasrc_class->sublabels[1] = g_strdup("5 min");
+    datasrc_class->sublabels[2] = g_strdup("15 min");
     datasrc_class->set_subidx = mcc_src_load_avg_set_subidx;
     datasrc_class->read = mcc_src_load_avg_read;
     datasrc_class->get = mcc_src_load_avg_get;
@@ -125,7 +125,7 @@ static void mcc_src_load_avg_set_subidx(MccDataSource *datasrc)
     
     datasrc->nfg = 1;
     datasrc->fg_labels = g_new0(gchar *, 1);
-    datasrc->fg_labels[0] = g_strdup("load");
+    datasrc->fg_labels[0] = g_strdup("Load");
     datasrc->default_fg = g_new0(GdkColor, 1);
     datasrc->default_fg[0].red = 0xffff;
     datasrc->default_fg[0].green = 0x0000;
@@ -133,7 +133,7 @@ static void mcc_src_load_avg_set_subidx(MccDataSource *datasrc)
     
     datasrc->nbg = 1;
     datasrc->bg_labels = g_new0(gchar *, 1);
-    datasrc->bg_labels[0] = g_strdup("bg");
+    datasrc->bg_labels[0] = g_strdup("Background");
     datasrc->default_bg = g_new0(GdkColor, 1);
     datasrc->default_bg[0].red = 0x0000;
     datasrc->default_bg[0].green = 0x0000;

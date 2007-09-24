@@ -68,9 +68,9 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     
     gobject_class->finalize = mcc_src_battery_finalize;
     
-    datasrc_class->label = g_strdup("battery");
+    datasrc_class->label = g_strdup("Battery");
     datasrc_class->sublabels = g_new0(gchar *, 2);
-    datasrc_class->sublabels[0] = g_strdup("battery");
+    datasrc_class->sublabels[0] = g_strdup("Battery");
     datasrc_class->set_subidx = mcc_src_battery_set_subidx;
     datasrc_class->read = mcc_src_battery_read;
     datasrc_class->get = mcc_src_battery_get;
@@ -172,8 +172,8 @@ static void mcc_src_battery_set_subidx(MccDataSource *datasrc)
     
     datasrc->nfg = 2;
     datasrc->fg_labels = g_new0(gchar *, 2);
-    datasrc->fg_labels[0] = g_strdup("not charging");
-    datasrc->fg_labels[1] = g_strdup("charging");
+    datasrc->fg_labels[0] = g_strdup("Not Charging");
+    datasrc->fg_labels[1] = g_strdup("Charging");
     datasrc->default_fg = g_new0(GdkColor, 2);
     datasrc->default_fg[0].red = 0x0000;	// user
     datasrc->default_fg[0].green = 0x0000;
@@ -184,8 +184,8 @@ static void mcc_src_battery_set_subidx(MccDataSource *datasrc)
     
     datasrc->nbg = 2;
     datasrc->bg_labels = g_new0(gchar *, 2);
-    datasrc->bg_labels[0] = g_strdup("AC off");
-    datasrc->bg_labels[1] = g_strdup("AC on");
+    datasrc->bg_labels[0] = g_strdup("AC Off");
+    datasrc->bg_labels[1] = g_strdup("AC On");
     datasrc->default_bg = g_new0(GdkColor, 2);
     datasrc->default_bg[0].red = 0x0000;
     datasrc->default_bg[0].green = 0x0000;

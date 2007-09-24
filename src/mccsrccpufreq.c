@@ -67,10 +67,10 @@ static void mcc_src_cpu_freq_class_init(gpointer klass, gpointer class_data)
     
     gobject_class->finalize = mcc_src_cpu_freq_finalize;
     
-    datasrc_class->label = g_strdup("cpufreq");
+    datasrc_class->label = g_strdup("CPU Freq");
     datasrc_class->sublabels = g_new0(gchar *, 3);
-    datasrc_class->sublabels[0] = g_strdup("cpu0");
-    datasrc_class->sublabels[1] = g_strdup("cpu1");
+    datasrc_class->sublabels[0] = g_strdup("CPU 0");
+    datasrc_class->sublabels[1] = g_strdup("CPU 1");
     datasrc_class->set_subidx = mcc_src_cpu_freq_set_subidx;
     datasrc_class->read = mcc_src_cpu_freq_read;
     datasrc_class->get = mcc_src_cpu_freq_get;
@@ -130,7 +130,7 @@ static void mcc_src_cpu_freq_set_subidx(MccDataSource *datasrc)
     
     datasrc->nfg = 1;
     datasrc->fg_labels = g_new0(gchar *, 2);
-    datasrc->fg_labels[0] = g_strdup("frequency");
+    datasrc->fg_labels[0] = g_strdup("Frequency");
     datasrc->default_fg = g_new0(GdkColor, 1);
     datasrc->default_fg[0].red = 0xffff;
     datasrc->default_fg[0].green = 0xffff;
@@ -138,13 +138,13 @@ static void mcc_src_cpu_freq_set_subidx(MccDataSource *datasrc)
     
     datasrc->nbg = 1;
     datasrc->bg_labels = g_new0(gchar *, 2);
-    datasrc->bg_labels[0] = g_strdup("bg");
+    datasrc->bg_labels[0] = g_strdup("Background");
     datasrc->default_bg = g_new0(GdkColor, 1);
     datasrc->default_bg[0].red = 0x0000;
     datasrc->default_bg[0].green = 0x0000;
     datasrc->default_bg[0].blue = 0x0000;
     
-    datasrc->sublabel = g_strdup_printf("cpu%d", datasrc->subidx);
+    datasrc->sublabel = g_strdup(MCC_DATA_SOURCE_GET_CLASS(datasrc)->sublabels[datasrc->subidx]);
 }
 
 static MccValue *mcc_src_cpu_freq_get(MccDataSource *datasrc)

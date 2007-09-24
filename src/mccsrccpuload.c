@@ -67,11 +67,11 @@ static void mcc_src_cpu_load_class_init(gpointer klass, gpointer class_data)
     
     gobject_class->finalize = mcc_src_cpu_load_finalize;
     
-    datasrc_class->label = g_strdup("cpuload");
+    datasrc_class->label = g_strdup("CPU Load");
     datasrc_class->sublabels = g_new0(gchar *, 4);
-    datasrc_class->sublabels[0] = g_strdup("total");
-    datasrc_class->sublabels[1] = g_strdup("cpu0");
-    datasrc_class->sublabels[2] = g_strdup("cpu1");
+    datasrc_class->sublabels[0] = g_strdup("Total");
+    datasrc_class->sublabels[1] = g_strdup("CPU 0");
+    datasrc_class->sublabels[2] = g_strdup("CPU 1");
     datasrc_class->set_subidx = mcc_src_cpu_load_set_subidx;
     datasrc_class->read = mcc_src_cpu_load_read;
     datasrc_class->get = mcc_src_cpu_load_get;
@@ -166,7 +166,7 @@ static void mcc_src_cpu_load_set_subidx(MccDataSource *datasrc)
     
     datasrc->nbg = 1;
     datasrc->bg_labels = g_new0(gchar *, 2);
-    datasrc->bg_labels[0] = g_strdup("bg");
+    datasrc->bg_labels[0] = g_strdup("Background");
     datasrc->default_bg = g_new0(GdkColor, 1);
     datasrc->default_bg[0].red = 0x0000;
     datasrc->default_bg[0].green = 0x0000;
