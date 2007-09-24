@@ -4,6 +4,7 @@
 #include "mccvalue.h"
 #include "mccdatasource.h"
 #include "mccsrccpufreq.h"
+#include "mccsrccpuload.h"
 
 extern struct datasrc_t *datasrc_list[];
 
@@ -15,7 +16,7 @@ struct datasrc_t *datasrc_list[] = {
     NULL,
 };
 #else
-static GType datasrc_types[2];
+static GType datasrc_types[3];
 #endif
 
 static XfcePanelPlugin *plugin;
@@ -91,7 +92,7 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	GType type = src->object.g_type_instance.g_class->g_type;	// fixme: ... :-(
 	
 	gint src_idx = -1;
-	for (gint i = 0; datasrc_types[i] != 0L; i++) {
+	for (gint i = 0; datasrc_types[i] != 0; i++) {
 	    if (datasrc_types[i] == type) {
 		src_idx = i;
 		break;
@@ -271,9 +272,10 @@ static void plugin_start(XfcePanelPlugin *plg)
     plugin = plg;
     
     datasrc_types[0] = MCC_TYPE_SRC_CPU_FREQ;
+    datasrc_types[1] = MCC_TYPE_SRC_CPU_LOAD;
     // fixme: class の初期化のつもり。
     for (int i = 0; datasrc_types[i] != 0; i++) {
-	g_type_class_peek(datasrc_types[i]);
+	g_type_class_ref(datasrc_types[i]);
     }
     
     g_signal_connect(plugin, "configure-plugin", G_CALLBACK(configure_cb), NULL);
