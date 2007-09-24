@@ -19,11 +19,11 @@
 #include <gtk/gtk.h>
 #include <string.h>
 #include "mccgraph.h"
-#include "datasrc.h"
+#include "mccdatasource.h"
 
 enum {
     NEW_COL_LABEL,
-    NEW_COL_DATASRC,
+    NEW_COL_TYPE,
     NEW_COL_SUB_IDX,
     NEW_COL_NR,
 };
@@ -33,11 +33,11 @@ struct new_work_t {
     GtkWidget *vbox;
     GtkWidget *btn;
     GtkWidget *graph_box;
-    struct datasrc_t *src;
+    GType type;
     gint subidx;
 };
 
-static void list_add_graph(struct list_work_t *w, struct datasrc_t *src, gint subidx);
+static void list_add_graph(struct list_work_t *w, GType type, gint subidx);
 
 static void new_selected(GtkTreeSelection *sel, gpointer user_data)
 {
@@ -45,33 +45,33 @@ static void new_selected(GtkTreeSelection *sel, gpointer user_data)
     GtkTreeModel *model;
     GtkTreeIter iter;
     if (gtk_tree_selection_get_selected(sel, &model, &iter)) {
-	struct datasrc_t *src;
+	GType type;
 	gint subidx;
 	gtk_tree_model_get(model, &iter,
-		NEW_COL_DATASRC, &src,
+		NEW_COL_TYPE, &type,
 		NEW_COL_SUB_IDX, &subidx,
 		-1);
-	w->src = src;
+	w->type = type;
 	w->subidx = subidx;
-	gtk_widget_set_sensitive(w->btn, w->src != NULL);
+	gtk_widget_set_sensitive(w->btn, type != 0);
     }
 }
 
 static void new_clicked(GtkWidget *widget, gpointer userdata)
 {
     struct new_work_t *w = userdata;
-    if (w->src != NULL)
-	list_add_graph(w->ww, w->src, w->subidx);
+    if (w->type != 0)
+	list_add_graph(w->ww, w->type, w->subidx);
 }
 
-static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, const struct datasrc_t * const *srcs)
+static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType *datasrc_types)
 {
     struct new_work_t *w = g_new0(struct new_work_t, 1);
     
     w->ww = ww;
     w->graph_box = graph_box;
     
-    GtkTreeStore *store = gtk_tree_store_new(NEW_COL_NR, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_INT);
+    GtkTreeStore *store = gtk_tree_store_new(NEW_COL_NR, G_TYPE_STRING, G_TYPE_ULONG, G_TYPE_INT);	// fixme: ulong?
     GtkCellRenderer *renderer;
     GtkTreeViewColumn *column;
     
@@ -90,22 +90,23 @@ static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, const
 	    NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column);
     
-    for (const struct datasrc_t * const *ds = srcs; *ds != NULL; ds++) {
-	const struct datasrc_info_t *sip = (*(*ds)->sinfo)();
+    for (GType *types = datasrc_types; *types != 0; types++) {
+	GType type = *types;
+	MccDataSourceClass *class = g_type_class_peek(type);
 	GtkTreeIter iter0;
 	gtk_tree_store_append(store, &iter0, NULL);
 	gtk_tree_store_set(store, &iter0,
-		NEW_COL_LABEL, sip->label,
-		NEW_COL_DATASRC, NULL,
+		NEW_COL_LABEL, class->label,
+		NEW_COL_TYPE, 0,
 		NEW_COL_SUB_IDX, 0,
 		-1);
 	
-	for (gint subidx = 0; sip->sublabels[subidx] != NULL; subidx++) {
+	for (gint subidx = 0; class->sublabels[subidx] != NULL; subidx++) {
 	    GtkTreeIter iter1;
 	    gtk_tree_store_append(store, &iter1, &iter0);
 	    gtk_tree_store_set(store, &iter1,
-		    NEW_COL_LABEL, sip->sublabels[subidx],
-		    NEW_COL_DATASRC, *ds,
+		    NEW_COL_LABEL, class->sublabels[subidx],
+		    NEW_COL_TYPE, type,
 		    NEW_COL_SUB_IDX, subidx,
 		    -1);
 	}
@@ -135,7 +136,6 @@ enum {
     LST_COL_LABEL,
     LST_COL_PAGE,
     LST_COL_DATASRC,
-    LST_COL_DATASRC_CTXT,
     LST_COL_NR,
 };
 
@@ -199,17 +199,15 @@ static void delete_cb(GtkButton *button, gpointer userdata)
 }
 
 static GtkWidget *list_create_page(
-	struct datasrc_t *src, struct datasrc_context_t *ctxt,
-	MccGraph *graph, struct list_work_t *lw)
+	MccDataSource *src, MccGraph *graph, struct list_work_t *lw)
 {
-    const struct datasrc_info_t *sip = (*src->sinfo)();
-    const struct datasrc_context_info_t *ip = (*src->info)(ctxt);
+    MccDataSourceClass *class = MCC_DATA_SOURCE_GET_CLASS(src);
     gchar buf[128];
     
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
     GtkWidget *w, *frm, *tbl;
     
-    sprintf(buf, "%s - %s", sip->label, ip->sublabel);
+    sprintf(buf, "%s - %s", class->label, src->sublabel);
     w = gtk_label_new(buf);
     gtk_misc_set_alignment(GTK_MISC(w), 0, 0.5);
     gtk_widget_show(w);
@@ -219,11 +217,11 @@ static GtkWidget *list_create_page(
     gtk_widget_show(frm);
     gtk_box_pack_start(GTK_BOX(vbox), frm, FALSE, FALSE, 0);
     
-    tbl = gtk_table_new(ip->nfg, 2, FALSE);
+    tbl = gtk_table_new(src->nfg, 2, FALSE);
     gtk_widget_show(tbl);
     gtk_container_add(GTK_CONTAINER(frm), tbl);
-    for (int i = 0; i < ip->nfg; i++) {
-	w = gtk_label_new(ip->fg_labels[i]);
+    for (int i = 0; i < src->nfg; i++) {
+	w = gtk_label_new(src->fg_labels[i]);
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
@@ -243,11 +241,11 @@ static GtkWidget *list_create_page(
     gtk_widget_show(frm);
     gtk_box_pack_start(GTK_BOX(vbox), frm, FALSE, FALSE, 0);
     
-    tbl = gtk_table_new(ip->nfg, 2, FALSE);
+    tbl = gtk_table_new(src->nfg, 2, FALSE);
     gtk_widget_show(tbl);
     gtk_container_add(GTK_CONTAINER(frm), tbl);
-    for (int i = 0; i < ip->nbg; i++) {
-	w = gtk_label_new(ip->bg_labels[i]);
+    for (int i = 0; i < src->nbg; i++) {
+	w = gtk_label_new(src->bg_labels[i]);
 	gtk_widget_show(w);
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
@@ -317,33 +315,30 @@ static void list_add_page(GtkWidget *widget, gpointer data)
     struct list_work_t *w = data;
     GtkTreeIter iter;
     
-    struct datasrc_t *datasrc = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
-    struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(widget), "mcc-context");
+    MccDataSource *src = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
+    MccDataSourceClass *class = MCC_DATA_SOURCE_GET_CLASS(src);
     
-    GtkWidget *page = list_create_page(datasrc, ctxt, MCC_GRAPH(widget), w);
+    GtkWidget *page = list_create_page(src, MCC_GRAPH(widget), w);
     
-    const struct datasrc_info_t *sip = (*datasrc->sinfo)();
-    const struct datasrc_context_info_t *ip = (*datasrc->info)(ctxt);
     gchar buf[128];
-    sprintf(buf, "%s - %s", sip->label, ip->sublabel);
+    sprintf(buf, "%s - %s", class->label, src->sublabel);
     
     gtk_list_store_append(w->store, &iter);
     gtk_box_pack_start(GTK_BOX(w->page_box), page, FALSE, FALSE, 0);
     gtk_list_store_set(w->store, &iter,
 	    LST_COL_LABEL, buf,
 	    LST_COL_PAGE, page,
-	    LST_COL_DATASRC, datasrc,
-	    LST_COL_DATASRC_CTXT, ctxt,
+	    LST_COL_DATASRC, src,
 	    -1);
 }
 
-static void list_add_graph(struct list_work_t *w, struct datasrc_t *src, gint subidx)
+static void list_add_graph(struct list_work_t *w, GType type, gint subidx)
 {
-    GtkWidget *g = add_graph(src, subidx);
+    GtkWidget *g = add_graph(type, subidx);
     list_add_page(g, w);
 }
 
-void preferences_create(GtkWidget *graph_box, const struct datasrc_t * const *datasrcs)
+void preferences_create(GtkWidget *graph_box, GType *datasrc_types)
 {
     struct list_work_t work, *w = &work;
     
@@ -358,7 +353,7 @@ void preferences_create(GtkWidget *graph_box, const struct datasrc_t * const *da
     gtk_widget_show(w->page_box);
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(w->dialog)->vbox), w->page_box, FALSE, FALSE, 0);
     
-    w->store = gtk_list_store_new(LST_COL_NR, G_TYPE_STRING, GTK_TYPE_WIDGET, G_TYPE_POINTER, G_TYPE_POINTER);
+    w->store = gtk_list_store_new(LST_COL_NR, G_TYPE_STRING, GTK_TYPE_WIDGET, G_TYPE_POINTER);
     GtkWidget *tree;
     GtkCellRenderer *renderer;
     GtkTreeViewColumn *column;
@@ -379,12 +374,11 @@ void preferences_create(GtkWidget *graph_box, const struct datasrc_t * const *da
     {
 	GtkTreeIter iter;
 	gtk_list_store_append(w->store, &iter);
-	GtkWidget *page = new_create(w, graph_box, datasrcs);
+	GtkWidget *page = new_create(w, graph_box, datasrc_types);
 	gtk_box_pack_start(GTK_BOX(w->page_box), page, FALSE, FALSE, 0);
 	gtk_list_store_set(w->store, &iter,
 		LST_COL_LABEL, "New",
 		LST_COL_PAGE, page,
-		LST_COL_DATASRC_CTXT, NULL,
 		-1);
     }
     

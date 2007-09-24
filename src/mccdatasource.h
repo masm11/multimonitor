@@ -61,11 +61,13 @@ struct _MccDataSourceClass {
     gchar **sublabels;
     
     void (*read)(MccDataSourceClass *datasrc_class);
+    void (*set_subidx)(MccDataSource *src);
     MccValue *(*get)(MccDataSource *src);
 };
 
 GType mcc_data_source_get_type(void) G_GNUC_CONST;
 void mcc_data_source_read(GType type);
 MccValue *mcc_data_source_get(MccDataSource *datasrc);
+MccDataSource *mcc_data_source_new(GType type, gint subidx);
 
 #endif

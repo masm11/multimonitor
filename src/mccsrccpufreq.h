@@ -46,6 +46,5 @@ struct _MccSrcCpuFreqClass {
 };
 
 GType mcc_src_cpu_freq_get_type(void) G_GNUC_CONST;
-MccDataSource *mcc_src_cpu_freq_new(void);
 
 #endif

@@ -1,42 +1,22 @@
-#if 1
-#include <gtk/gtk.h>
-#include "mccsrccpufreq.h"
-
-void add_graph(void){}
-
-int main(int argc, char **argv)
-{
-    gtk_init(&argc, &argv);
-    
-    MccDataSource *src = mcc_src_cpu_freq_new();
-    
-    while (TRUE) {
-	mcc_data_source_read(MCC_TYPE_SRC_CPU_FREQ);
-	MccValue *val = mcc_data_source_get(src);
-	sleep(1);
-    }
-    
-    g_object_unref(src);
-    
-    return 0;
-}
-
-#else
-
 #include <gtk/gtk.h>
 #include <libxfce4panel/xfce-panel-plugin.h>
 #include "mccgraph.h"
 #include "mccvalue.h"
-#include "datasrc.h"
+#include "mccdatasource.h"
+#include "mccsrccpufreq.h"
 
 extern struct datasrc_t *datasrc_list[];
 
+#if 0
 struct datasrc_t *datasrc_list[] = {
     &linux_cpuload_datasrc,
     &linux_cpufreq_datasrc,
     &linux_battery_datasrc,
     NULL,
 };
+#else
+static GType datasrc_types[2];
+#endif
 
 static XfcePanelPlugin *plugin;
 static GtkWidget *ev;
@@ -44,40 +24,28 @@ static GtkWidget *box;
 
 static void update(GtkWidget *widget, gpointer data)
 {
-    struct datasrc_t *datasrc = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
-    struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(widget), "mcc-context");
+    MccDataSource *src = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
     
-    MccValue *value = (*datasrc->get)(ctxt);
+    MccValue *value = mcc_data_source_get(src);
     mcc_graph_add(MCC_GRAPH(widget), value);
 }
 
 static gboolean timer(gpointer data)
 {
-    for (gint i = 0; datasrc_list[i] != NULL; i++)
-	(*datasrc_list[i]->sread)();
+    for (gint i = 0; datasrc_types[i] != 0; i++)
+	mcc_data_source_read(datasrc_types[i]);
     
     gtk_container_foreach(GTK_CONTAINER(box), update, NULL);
     
     return TRUE;
 }
 
-static void graph_destroyed(GtkObject *object, gpointer userdata)
+GtkWidget *add_graph(GType type, gint subidx)
 {
-    GtkWidget *w = GTK_WIDGET(object);
-    struct datasrc_t *src = g_object_get_data(G_OBJECT(w), "mcc-datasrc");
-    struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(w), "mcc-context");
-    (*src->destroy)(ctxt);
-}
-
-GtkWidget *add_graph(struct datasrc_t *src, gint subidx)
-{
-    struct datasrc_context_t *ctxt = (*src->new)(subidx);
-    const struct datasrc_context_info_t *ip = (*src->info)(ctxt);
-    GtkWidget *g = mcc_graph_new(ip->nvalues, ip->min, ip->max,
-	    ip->nfg, ip->default_fg, ip->nbg, ip->default_bg);
-    g_object_set_data(G_OBJECT(g), "mcc-datasrc", src);
-    g_object_set_data(G_OBJECT(g), "mcc-context", ctxt);
-    g_signal_connect(g, "destroy", G_CALLBACK(graph_destroyed), NULL);
+    MccDataSource *src = mcc_data_source_new(type, subidx);
+    GtkWidget *g = mcc_graph_new(src->nvalues, src->min, src->max,
+	    src->nfg, src->default_fg, src->nbg, src->default_bg);
+    g_object_set_data_full(G_OBJECT(g), "mcc-datasrc", src, g_object_unref);
     
     int width, height;
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
@@ -119,13 +87,12 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	sprintf(grp, "graph%d", no);
 	xfce_rc_set_group(rc, grp);
 	
-	struct datasrc_t *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
-	struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(graph), "mcc-context");
-	const struct datasrc_context_info_t *info = (*src->info)(ctxt);
+	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
+	GType type = src->object.g_type_instance.g_class->g_type;	// fixme: ... :-(
 	
 	gint src_idx = -1;
-	for (gint i = 0; datasrc_list[i] != NULL; i++) {
-	    if (datasrc_list[i] == src) {
+	for (gint i = 0; datasrc_types[i] != 0L; i++) {
+	    if (datasrc_types[i] == type) {
 		src_idx = i;
 		break;
 	    }
@@ -133,10 +100,10 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	
 	if (src_idx >= 0) {
 	    xfce_rc_write_int_entry(rc, "datasrc_index", src_idx);
-	    xfce_rc_write_int_entry(rc, "datasrc_subindex", info->sub_idx);
+	    xfce_rc_write_int_entry(rc, "datasrc_subindex", src->subidx);
 	}
 	
-	for (int i = 0; i < info->nfg; i++) {
+	for (int i = 0; i < src->nfg; i++) {
 	    GdkColor col;
 	    mcc_graph_get_fg(graph, i, &col);
 	    char key[64], buf[64];
@@ -145,7 +112,7 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	    xfce_rc_write_entry(rc, key, buf);
 	}
 	
-	for (int i = 0; i < info->nbg; i++) {
+	for (int i = 0; i < src->nbg; i++) {
 	    GdkColor col;
 	    mcc_graph_get_bg(graph, i, &col);
 	    char key[64], buf[64];
@@ -198,14 +165,12 @@ static void load_config(void)
 	    continue;
 	}
 	
-	GtkWidget *g = add_graph(datasrc_list[idx], subidx);
+	GtkWidget *g = add_graph(datasrc_types[idx], subidx);
 	MccGraph *graph = MCC_GRAPH(g);
 	
-	struct datasrc_t *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
-	struct datasrc_context_t *ctxt = g_object_get_data(G_OBJECT(graph), "mcc-context");
-	const struct datasrc_context_info_t *info = (*src->info)(ctxt);
+	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
 	
-	for (int i = 0; i < info->nfg; i++) {
+	for (int i = 0; i < src->nfg; i++) {
 	    GdkColor col;
 	    gchar key[64];
 	    sprintf(key, "fg%d", i);
@@ -214,7 +179,7 @@ static void load_config(void)
 		mcc_graph_set_fg(graph, i, &col);
 	}
 	
-	for (int i = 0; i < info->nbg; i++) {
+	for (int i = 0; i < src->nbg; i++) {
 	    GdkColor col;
 	    gchar key[64];
 	    sprintf(key, "bg%d", i);
@@ -296,7 +261,7 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
 
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 {
-    preferences_create(box, datasrc_list);
+    preferences_create(box, datasrc_types);
     // 戻ってきたら、preferences はもう閉じてる。
     save_config_cb(plugin, NULL);
 }
@@ -305,8 +270,11 @@ static void plugin_start(XfcePanelPlugin *plg)
 {
     plugin = plg;
     
-    for (int i = 0; datasrc_list[i] != NULL; i++)
-	(*datasrc_list[i]->sinit)();
+    datasrc_types[0] = MCC_TYPE_SRC_CPU_FREQ;
+    // fixme: class の初期化のつもり。
+    for (int i = 0; datasrc_types[i] != 0; i++) {
+	g_type_class_peek(datasrc_types[i]);
+    }
     
     g_signal_connect(plugin, "configure-plugin", G_CALLBACK(configure_cb), NULL);
     g_signal_connect(plugin, "size-changed", G_CALLBACK(change_size_cb), NULL);
@@ -337,17 +305,18 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     GList *list = gtk_container_get_children(GTK_CONTAINER(box));
     if (list == NULL) {
-	struct datasrc_t *datasrc = datasrc_list[0];
-	add_graph(datasrc, 0);
+	GType type = datasrc_types[0];
+	add_graph(type, 0);
     }
     
     g_timeout_add(100, timer, NULL);
     
     gtk_main();
     
+#if 0
     for (int i = 0; datasrc_list[i] != NULL; i++)
 	(*datasrc_list[i]->sfini)();
+#endif
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)
-#endif

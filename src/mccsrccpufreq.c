@@ -22,6 +22,7 @@
 static void cpufreq_read_data(gint64 *ptr, gint nr);
 
 static void mcc_src_cpu_freq_class_init(gpointer klass, gpointer class_data);
+static void mcc_src_cpu_freq_set_subidx(MccDataSource *datasrc);
 static void mcc_src_cpu_freq_read(MccDataSourceClass *datasrc_class);
 static void mcc_src_cpu_freq_init(GTypeInstance *obj, gpointer klass);
 static void mcc_src_cpu_freq_finalize(GObject *obj);
@@ -67,8 +68,10 @@ static void mcc_src_cpu_freq_class_init(gpointer klass, gpointer class_data)
     gobject_class->finalize = mcc_src_cpu_freq_finalize;
     
     datasrc_class->label = g_strdup("cpufreq");
-    datasrc_class->sublabels = g_new0(gchar *, 2);
+    datasrc_class->sublabels = g_new0(gchar *, 3);
     datasrc_class->sublabels[0] = g_strdup("cpu0");
+    datasrc_class->sublabels[1] = g_strdup("cpu1");
+    datasrc_class->set_subidx = mcc_src_cpu_freq_set_subidx;
     datasrc_class->read = mcc_src_cpu_freq_read;
     datasrc_class->get = mcc_src_cpu_freq_get;
     
@@ -110,26 +113,6 @@ static void mcc_src_cpu_freq_init(GTypeInstance *obj, gpointer klass)
 {
     MccSrcCpuFreq *self = MCC_SRC_CPU_FREQ(obj);
     MccDataSource *data_source = &self->data_source;
-    
-    data_source->subidx = 0;
-    data_source->min = 0.0;
-    data_source->max = 2001000000;
-    data_source->nvalues = 1;
-    data_source->nfg = 1;
-    data_source->fg_labels = g_new0(gchar *, 2);
-    data_source->fg_labels[0] = g_strdup("frequency");
-    data_source->default_fg = g_new0(GdkColor, 1);
-    data_source->default_fg[0].red = 0xffff;
-    data_source->default_fg[0].green = 0xffff;
-    data_source->default_fg[0].blue = 0xffff;
-    data_source->nbg = 1;
-    data_source->bg_labels = g_new0(gchar *, 2);
-    data_source->bg_labels[0] = g_strdup("bg");
-    data_source->default_bg = g_new0(GdkColor, 1);
-    data_source->default_bg[0].red = 0x0000;
-    data_source->default_bg[0].green = 0x0000;
-    data_source->default_bg[0].blue = 0x0000;
-    data_source->sublabel = g_strdup("cpu0");
 }
 
 static void mcc_src_cpu_freq_finalize(GObject *object)
@@ -139,6 +122,31 @@ static void mcc_src_cpu_freq_finalize(GObject *object)
     (*G_OBJECT_CLASS(mcc_src_cpu_freq_parent_class)->finalize)(object);
 }
 
+static void mcc_src_cpu_freq_set_subidx(MccDataSource *datasrc)
+{
+    datasrc->min = 0.0;
+    datasrc->max = 2001000000;
+    datasrc->nvalues = 1;
+    
+    datasrc->nfg = 1;
+    datasrc->fg_labels = g_new0(gchar *, 2);
+    datasrc->fg_labels[0] = g_strdup("frequency");
+    datasrc->default_fg = g_new0(GdkColor, 1);
+    datasrc->default_fg[0].red = 0xffff;
+    datasrc->default_fg[0].green = 0xffff;
+    datasrc->default_fg[0].blue = 0xffff;
+    
+    datasrc->nbg = 1;
+    datasrc->bg_labels = g_new0(gchar *, 2);
+    datasrc->bg_labels[0] = g_strdup("bg");
+    datasrc->default_bg = g_new0(GdkColor, 1);
+    datasrc->default_bg[0].red = 0x0000;
+    datasrc->default_bg[0].green = 0x0000;
+    datasrc->default_bg[0].blue = 0x0000;
+    
+    datasrc->sublabel = g_strdup_printf("cpu%d", datasrc->subidx);
+}
+
 static MccValue *mcc_src_cpu_freq_get(MccDataSource *datasrc)
 {
     MccSrcCpuFreq *src = MCC_SRC_CPU_FREQ(datasrc);
@@ -146,9 +154,4 @@ static MccValue *mcc_src_cpu_freq_get(MccDataSource *datasrc)
     MccValue *value = mcc_value_new(1);
     mcc_value_set_value(value, 0, src_class->newdata[src->data_source.subidx]);
     return value;
-}
-
-MccDataSource *mcc_src_cpu_freq_new(void)
-{
-    return g_object_new(MCC_TYPE_SRC_CPU_FREQ, NULL);
 }
