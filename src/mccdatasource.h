@@ -51,6 +51,8 @@ struct _MccDataSource {
     gchar **bg_labels;		// [nbg]
     GdkColor *default_bg;	// [nbg]
     
+    gboolean dynamic_scaling;
+    
     gchar *sublabel;
 };
 

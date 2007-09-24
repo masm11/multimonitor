@@ -37,7 +37,7 @@ GtkWidget *add_graph(GType type, gint subidx)
 {
     MccDataSource *src = mcc_data_source_new(type, subidx);
     GtkWidget *g = mcc_graph_new(src->nvalues, src->min, src->max,
-	    src->nfg, src->default_fg, src->nbg, src->default_bg);
+	    src->nfg, src->default_fg, src->nbg, src->default_bg, src->dynamic_scaling);
     g_object_set_data_full(G_OBJECT(g), "mcc-datasrc", src, g_object_unref);
     
     int width, height;

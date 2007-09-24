@@ -17,6 +17,7 @@
  */
 
 #include <string.h>
+#include <math.h>
 #include "mccvalue.h"
 #include "mccgraph.h"
 
@@ -31,13 +32,18 @@ typedef struct _MccGraphPrivate {
     
     GdkGC *gc_copy;
     GdkGC **gc_fg, **gc_bg;
+    GdkGC *gc_bd;
     
     gint nfg;
     GdkColor *fg;
     gint nbg;
     GdkColor *bg;
     
+    GdkColor bd;
+    
     gint min, max;
+    gboolean dynamic_scaling;
+    gint dynamic_scale;
 } MccGraphPrivate;
 
 G_DEFINE_TYPE(MccGraph, mcc_graph, GTK_TYPE_MISC)
@@ -79,6 +85,10 @@ static void mcc_graph_init(MccGraph *self)
     
     self->priv->min = 0;
     self->priv->max = 1.0;
+    
+    self->priv->bd.red = 0xffff;
+    self->priv->bd.green = 0xffff;
+    self->priv->bd.blue = 0xffff;
 }
 
 static void mcc_graph_finalize(GObject *object)
@@ -127,6 +137,28 @@ static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
 	return TRUE;
     }
     return FALSE;
+}
+
+static gint calc_dynamic_scale(MccGraph *graph)
+{
+    MccGraphPrivate *priv = graph->priv;
+    
+    if (!priv->dynamic_scaling)
+	return 1;
+    
+    gdouble max_v = 1.0;
+    gint x;
+    GList *lp;
+    for (lp = priv->list, x = priv->pix_width - 1; lp != NULL && x >= 0; lp = lp->next, x--) {
+	MccValue *value = lp->data;
+	gdouble v = 0;
+	for (gint i = 0; i < priv->nvalues; i++)
+	    v += mcc_value_get_value(value, i);
+	if (max_v < v)
+	    max_v = v;
+    }
+    
+    return (gint) ceil(max_v);
 }
 
 static void create_gc(MccGraph *graph)
@@ -179,6 +211,14 @@ static void create_gc(MccGraph *graph)
 	gdk_colormap_alloc_color(cmap, &col, FALSE, TRUE);
 	gdk_gc_set_foreground(priv->gc_fg[i], &col);
     }
+    
+    {
+	priv->gc_bd = gdk_gc_new(widget->window);
+	gdk_gc_set_function(priv->gc_bd, GDK_COPY);
+	GdkColor col = priv->bd;
+	gdk_colormap_alloc_color(cmap, &col, FALSE, TRUE);
+	gdk_gc_set_foreground(priv->gc_bd, &col);
+    }
 }
 
 static void create_pixmap(MccGraph *graph)
@@ -211,6 +251,8 @@ static void create_pixmap(MccGraph *graph)
 	    gdouble v = 0;
 	    for (gint j = 0; j <= i; j++)
 		v += mcc_value_get_value(value, j);
+	    if (graph->priv->dynamic_scaling)
+		v /= graph->priv->dynamic_scale;
 	    gint col_fg = mcc_value_get_foreground(value, i);
 	    gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	    if (h > 0) {
@@ -222,6 +264,14 @@ static void create_pixmap(MccGraph *graph)
     
     for ( ; x >= 0; x--)
 	gdk_draw_line(priv->pixmap, priv->gc_bg[0], x, 0, x, priv->pix_height);
+    
+    if (priv->dynamic_scaling) {
+	for (gint n = 1; n < priv->dynamic_scale; n++) {
+	    gint h = n * priv->pix_height / priv->dynamic_scale;
+	    gdk_draw_line(priv->pixmap, priv->gc_bd,
+		    0, priv->pix_height - h, priv->pix_width, priv->pix_height - h);
+	}
+    }
     
     gtk_widget_queue_clear(GTK_WIDGET(graph));
 }
@@ -241,11 +291,21 @@ static void shift_and_draw(MccGraph *graph)
 	    gdouble v = 0;
 	    for (gint j = 0; j <= i; j++)
 		v += mcc_value_get_value(value, j);
+	    if (graph->priv->dynamic_scaling)
+		v /= graph->priv->dynamic_scale;
 	    gint col_fg = mcc_value_get_foreground(value, i);
 	    gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	    if (h > 0) {
 		gdk_draw_line(priv->pixmap, priv->gc_fg[col_fg],
 			x, priv->pix_height - h, x, priv->pix_height);
+	    }
+	}
+	
+	if (priv->dynamic_scaling) {
+	    for (gint n = 1; n < priv->dynamic_scale; n++) {
+		gint h = n * priv->pix_height / priv->dynamic_scale;
+		gdk_draw_line(priv->pixmap, priv->gc_bd,
+			priv->pix_width - 1, priv->pix_height - h, priv->pix_width - 1, priv->pix_height - h);
 	    }
 	}
     }
@@ -271,7 +331,19 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
 	}
     }
     
-    shift_and_draw(graph);
+    gboolean recreate = FALSE;
+    if (graph->priv->dynamic_scaling) {
+	gint scale = calc_dynamic_scale(graph);
+	if (graph->priv->dynamic_scale != scale) {
+	    graph->priv->dynamic_scale = scale;
+	    recreate = TRUE;
+	}
+    }
+    
+    if (!recreate)
+	shift_and_draw(graph);
+    else
+	create_pixmap(graph);
 }
 
 void mcc_graph_get_fg(MccGraph *graph, int i, GdkColor *fg)
@@ -300,7 +372,8 @@ void mcc_graph_set_bg(MccGraph *graph, int i, const GdkColor *bg)
 
 GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
-	gint nbg, const GdkColor *bg)
+	gint nbg, const GdkColor *bg,
+	gboolean dynamic_scaling)
 {
     MccGraph *graph;
     
@@ -312,6 +385,7 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
     graph->priv->fg = g_new0(GdkColor, nfg);
     graph->priv->nbg = nbg;
     graph->priv->bg = g_new0(GdkColor, nbg);
+    graph->priv->dynamic_scaling = dynamic_scaling;
     
     memcpy(graph->priv->fg, fg, sizeof(GdkColor) * nfg);
     memcpy(graph->priv->bg, bg, sizeof(GdkColor) * nbg);

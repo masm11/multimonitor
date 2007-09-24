@@ -139,6 +139,8 @@ static void mcc_src_load_avg_set_subidx(MccDataSource *datasrc)
     datasrc->default_bg[0].green = 0x0000;
     datasrc->default_bg[0].blue = 0x0000;
     
+    datasrc->dynamic_scaling = TRUE;
+    
     datasrc->sublabel = g_strdup(MCC_DATA_SOURCE_GET_CLASS(datasrc)->sublabels[datasrc->subidx]);
 }
 
