@@ -222,6 +222,7 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     } else {
 	box = gtk_vbox_new(FALSE, 1);
     }
+    gtk_container_set_border_width(GTK_CONTAINER(box), 1);
     
     gtk_widget_show(box);
     
@@ -301,6 +302,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     } else {
 	box = gtk_vbox_new(FALSE, 1);
     }
+    gtk_container_set_border_width(GTK_CONTAINER(box), 1);
     gtk_widget_show(box);
     gtk_container_add(GTK_CONTAINER(ev), box);
     
