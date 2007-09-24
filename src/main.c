@@ -5,6 +5,7 @@
 #include "mccdatasource.h"
 #include "mccsrccpufreq.h"
 #include "mccsrccpuload.h"
+#include "mccsrcbattery.h"
 
 extern struct datasrc_t *datasrc_list[];
 
@@ -16,7 +17,7 @@ struct datasrc_t *datasrc_list[] = {
     NULL,
 };
 #else
-static GType datasrc_types[3];
+static GType datasrc_types[4];
 #endif
 
 static XfcePanelPlugin *plugin;
@@ -273,6 +274,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     datasrc_types[0] = MCC_TYPE_SRC_CPU_FREQ;
     datasrc_types[1] = MCC_TYPE_SRC_CPU_LOAD;
+    datasrc_types[2] = MCC_TYPE_SRC_BATTERY;
     // fixme: class の初期化のつもり。
     for (int i = 0; datasrc_types[i] != 0; i++) {
 	g_type_class_ref(datasrc_types[i]);
