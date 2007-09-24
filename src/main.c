@@ -1,3 +1,4 @@
+#include <string.h>
 #include <gtk/gtk.h>
 #include <libxfce4panel/xfce-panel-plugin.h>
 #include "mccgraph.h"
@@ -6,19 +7,9 @@
 #include "mccsrccpufreq.h"
 #include "mccsrccpuload.h"
 #include "mccsrcbattery.h"
+#include "mccsrcloadavg.h"
 
-extern struct datasrc_t *datasrc_list[];
-
-#if 0
-struct datasrc_t *datasrc_list[] = {
-    &linux_cpuload_datasrc,
-    &linux_cpufreq_datasrc,
-    &linux_battery_datasrc,
-    NULL,
-};
-#else
-static GType datasrc_types[4];
-#endif
+static GType *datasrc_types;
 
 static XfcePanelPlugin *plugin;
 static GtkWidget *ev;
@@ -272,9 +263,15 @@ static void plugin_start(XfcePanelPlugin *plg)
 {
     plugin = plg;
     
-    datasrc_types[0] = MCC_TYPE_SRC_CPU_FREQ;
-    datasrc_types[1] = MCC_TYPE_SRC_CPU_LOAD;
-    datasrc_types[2] = MCC_TYPE_SRC_BATTERY;
+    GType types[] = {
+	MCC_TYPE_SRC_CPU_FREQ,
+	MCC_TYPE_SRC_CPU_LOAD,
+	MCC_TYPE_SRC_BATTERY,
+	MCC_TYPE_SRC_LOAD_AVG,
+    };
+    datasrc_types = g_new0(GType, sizeof types / sizeof types[0] + 1);
+    memcpy(datasrc_types, types, sizeof types);
+    
     // fixme: class の初期化のつもり。
     for (int i = 0; datasrc_types[i] != 0; i++) {
 	g_type_class_ref(datasrc_types[i]);
