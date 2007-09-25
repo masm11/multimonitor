@@ -144,6 +144,9 @@ struct list_work_t {
     GtkWidget *curr_page;
     GtkWidget *page_box;
     GtkListStore *store;
+    
+    GtkSizeGroup *grp_label;
+    GtkSizeGroup *grp_ctrl;
 };
 
 static void color_changed(GtkWidget *widget, gpointer userdata)
@@ -230,6 +233,7 @@ static GtkWidget *list_create_page(
     for (int i = 0; i < src->nfg; i++) {
 	w = gtk_label_new(src->fg_labels[i]);
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
+	gtk_size_group_add_widget(lw->grp_label, w);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
 	
@@ -240,6 +244,7 @@ static GtkWidget *list_create_page(
 	g_object_set_data(G_OBJECT(w), "mcc-pref-color-type", "fg");
 	g_object_set_data(G_OBJECT(w), "mcc-pref-color-index", GINT_TO_POINTER(i));
 	g_signal_connect(G_OBJECT(w), "color-set", G_CALLBACK(color_changed), NULL);
+	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, i, i + 1);
     }
@@ -253,8 +258,9 @@ static GtkWidget *list_create_page(
     gtk_container_add(GTK_CONTAINER(frm), tbl);
     for (int i = 0; i < src->nbg; i++) {
 	w = gtk_label_new(src->bg_labels[i]);
-	gtk_widget_show(w);
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
+	gtk_size_group_add_widget(lw->grp_label, w);
+	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
 	
 	GdkColor bg;
@@ -264,6 +270,7 @@ static GtkWidget *list_create_page(
 	g_object_set_data(G_OBJECT(w), "mcc-pref-color-type", "bg");
 	g_object_set_data(G_OBJECT(w), "mcc-pref-color-index", GINT_TO_POINTER(i));
 	g_signal_connect(G_OBJECT(w), "color-set", G_CALLBACK(color_changed), NULL);
+	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, i, i + 1);
     }
@@ -277,12 +284,15 @@ static GtkWidget *list_create_page(
 	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
 	
 	w = gtk_label_new("Size");
+	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
+	gtk_size_group_add_widget(lw->grp_label, w);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, 0, 1);
 	
 	w = gtk_spin_button_new_with_range(1, 1000, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(w), width == -1 ? height : width);
 	g_signal_connect(w, "value-changed", G_CALLBACK(size_changed), graph);
+	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
     }
@@ -295,22 +305,32 @@ static GtkWidget *list_create_page(
 	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
 	
 	w = gtk_label_new("Font");
+	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
+	gtk_size_group_add_widget(lw->grp_label, w);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, 0, 1);
 	
 	w = gtk_font_button_new_with_font(fontname);
 	g_signal_connect(w, "font-set", G_CALLBACK(font_changed), graph);
+	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
     }
     
     {
-	GtkWidget *w = gtk_button_new_with_label("Delete");
-	gtk_box_pack_start(GTK_BOX(vbox), w, FALSE, FALSE, 0);
+	const gchar *fontname = mcc_graph_get_font(graph);
+	
+	tbl = gtk_table_new(1, 2, FALSE);
+	gtk_widget_show(tbl);
+	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
+	
+	w = gtk_button_new_with_label("Delete");
 	g_object_set_data(G_OBJECT(w), "mcc-pref-graph", graph);
 	g_object_set_data(G_OBJECT(w), "mcc-pref-page", vbox);
 	g_signal_connect(w, "clicked", G_CALLBACK(delete_cb), lw);
+	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
     }
     
     return vbox;
@@ -368,6 +388,9 @@ void preferences_create(GtkWidget *graph_box, GType *datasrc_types)
     
     memset(w, 0, sizeof *w);
     
+    w->grp_label = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
+    w->grp_ctrl = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
+    
     w->dialog = gtk_dialog_new_with_buttons(
 	    "Multi Monitor Preferences", NULL, GTK_DIALOG_MODAL,
 	    "Close", GTK_RESPONSE_CLOSE,
@@ -411,4 +434,7 @@ void preferences_create(GtkWidget *graph_box, GType *datasrc_types)
     gtk_dialog_run(GTK_DIALOG(w->dialog));
     
     gtk_widget_destroy(w->dialog);
+    
+    g_object_unref(w->grp_label);
+    g_object_unref(w->grp_ctrl);
 }
