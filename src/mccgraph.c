@@ -18,6 +18,7 @@
 
 #include <string.h>
 #include <math.h>
+#include <gtk/gtkmain.h>
 #include "mccvalue.h"
 #include "mccgraph.h"
 
@@ -44,6 +45,9 @@ typedef struct _MccGraphPrivate {
     gint min, max;
     gboolean dynamic_scaling;
     gint dynamic_scale;
+    
+    gchar *label, *sublabel;
+    PangoLayout *layout;
 } MccGraphPrivate;
 
 G_DEFINE_TYPE(MccGraph, mcc_graph, GTK_TYPE_MISC)
@@ -53,6 +57,7 @@ static void mcc_graph_destroy(GtkObject *object);
 static void mcc_graph_realize(GtkWidget *widget);
 static void mcc_graph_size_allocate(GtkWidget *widget, GtkAllocation *allocation);
 static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event);
+static void create_layout(MccGraph *graph);
 static void create_gc(MccGraph *graph);
 static void create_pixmap(MccGraph *graph);
 static void shift_and_draw(MccGraph *graph);
@@ -89,6 +94,9 @@ static void mcc_graph_init(MccGraph *self)
     self->priv->bd.red = 0xffff;
     self->priv->bd.green = 0xffff;
     self->priv->bd.blue = 0xffff;
+    
+    self->priv->label = g_strdup("label");
+    self->priv->sublabel = g_strdup("sublabel");
 }
 
 static void mcc_graph_finalize(GObject *object)
@@ -108,6 +116,7 @@ static void mcc_graph_realize(GtkWidget *widget)
     
     (*GTK_WIDGET_CLASS(mcc_graph_parent_class)->realize)(widget);
     
+    create_layout(graph);
     create_gc(graph);
     create_pixmap(graph);
 }
@@ -133,6 +142,16 @@ static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
 		widget->allocation.width - graph->priv->pix_width,
 		widget->allocation.height - graph->priv->pix_height,
 		graph->priv->pix_width, graph->priv->pix_height);
+	
+	gtk_paint_layout(widget->style,
+		widget->window,
+		GTK_WIDGET_STATE(widget),
+		TRUE,
+		&event->area,
+		widget,
+		"graph",
+		0, 0,
+		graph->priv->layout);
 	
 	return TRUE;
     }
@@ -163,6 +182,28 @@ static gint calc_dynamic_scale(MccGraph *graph)
 	scale = 1;
     
     return scale;
+}
+
+static void create_layout(MccGraph *graph)
+{
+    GtkWidget *widget = GTK_WIDGET(graph);
+    
+    PangoFontDescription *font_desc = pango_font_description_from_string("sans 6");
+    gtk_widget_modify_font(widget, font_desc);
+    pango_font_description_free(font_desc);
+    
+    if (graph->priv->layout != NULL)
+	g_object_unref(graph->priv->layout);
+    gchar *str = g_strdup_printf("%s\n%s", graph->priv->label, graph->priv->sublabel);
+    graph->priv->layout = gtk_widget_create_pango_layout(widget, str);
+    g_free(str);
+    
+    GdkColor color = {
+	.red = 0xffff,
+	.green = 0xffff,
+	.blue = 0xffff,
+    };
+    gtk_widget_modify_text(widget, GTK_STATE_NORMAL, &color);
 }
 
 static void create_gc(MccGraph *graph)
@@ -377,22 +418,27 @@ void mcc_graph_set_bg(MccGraph *graph, int i, const GdkColor *bg)
 GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
 	gint nbg, const GdkColor *bg,
-	gboolean dynamic_scaling)
+	gboolean dynamic_scaling,
+	const gchar *label, const gchar *sublabel)
 {
     MccGraph *graph;
     
     graph = g_object_new(MCC_TYPE_GRAPH, NULL);
-    graph->priv->nvalues = nvalues;
-    graph->priv->min = min;
-    graph->priv->max = max;
-    graph->priv->nfg = nfg;
-    graph->priv->fg = g_new0(GdkColor, nfg);
-    graph->priv->nbg = nbg;
-    graph->priv->bg = g_new0(GdkColor, nbg);
-    graph->priv->dynamic_scaling = dynamic_scaling;
+    MccGraphPrivate *priv = graph->priv;
+    priv->nvalues = nvalues;
+    priv->min = min;
+    priv->max = max;
+    priv->nfg = nfg;
+    priv->fg = g_new0(GdkColor, nfg);
+    priv->nbg = nbg;
+    priv->bg = g_new0(GdkColor, nbg);
+    priv->dynamic_scaling = dynamic_scaling;
     
-    memcpy(graph->priv->fg, fg, sizeof(GdkColor) * nfg);
-    memcpy(graph->priv->bg, bg, sizeof(GdkColor) * nbg);
+    memcpy(priv->fg, fg, sizeof(GdkColor) * nfg);
+    memcpy(priv->bg, bg, sizeof(GdkColor) * nbg);
+    
+    priv->label = g_strdup(label);
+    priv->sublabel = g_strdup(sublabel);
     
     return GTK_WIDGET(graph);
 }

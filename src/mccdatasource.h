@@ -74,6 +74,7 @@ struct _MccDataSourceClass {
 
 GType mcc_data_source_get_type(void) G_GNUC_CONST;
 void mcc_data_source_read(GType type);
+gboolean mcc_data_source_has_new_data(MccDataSource *datasrc);
 MccValue *mcc_data_source_get(MccDataSource *datasrc);
 MccDataSource *mcc_data_source_new(GType type, gint subidx);
 

@@ -15,22 +15,23 @@ static XfcePanelPlugin *plugin;
 static GtkWidget *ev;
 static GtkWidget *box;
 
-static void update(GtkWidget *widget, gpointer data)
-{
-    MccDataSource *src = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
-    
-    if (src->add_on_tick || mcc_data_source_has_new_data(src)) {
-	MccValue *value = mcc_data_source_get(src);
-	mcc_graph_add(MCC_GRAPH(widget), value);
-    }
-}
-
 static gboolean timer(gpointer data)
 {
     for (gint i = 0; datasrc_types[i] != 0; i++)
 	mcc_data_source_read(datasrc_types[i]);
     
-    gtk_container_foreach(GTK_CONTAINER(box), update, NULL);
+    GList *list = gtk_container_get_children(GTK_CONTAINER(box));
+    while (list != NULL) {
+	MccGraph *graph = list->data;
+	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
+	
+	if (src->add_on_tick || mcc_data_source_has_new_data(src)) {
+	    MccValue *value = mcc_data_source_get(src);
+	    mcc_graph_add(graph, value);
+	}
+	
+	list = g_list_delete_link(list, list);
+    }
     
     return TRUE;
 }
@@ -39,7 +40,8 @@ GtkWidget *add_graph(GType type, gint subidx)
 {
     MccDataSource *src = mcc_data_source_new(type, subidx);
     GtkWidget *g = mcc_graph_new(src->nvalues, src->min, src->max,
-	    src->nfg, src->default_fg, src->nbg, src->default_bg, src->dynamic_scaling);
+	    src->nfg, src->default_fg, src->nbg, src->default_bg, src->dynamic_scaling,
+	    MCC_DATA_SOURCE_GET_CLASS(src)->label, src->sublabel);
     g_object_set_data_full(G_OBJECT(g), "mcc-datasrc", src, g_object_unref);
     
     int width, height;
@@ -50,7 +52,7 @@ GtkWidget *add_graph(GType type, gint subidx)
 	width = -1;
 	height = 50;
     }
-
+    
     gtk_widget_set_size_request(g, width, height);
     gtk_widget_show(g);
     gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
@@ -127,7 +129,7 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	    xfce_rc_write_int_entry(rc, "size", size);
 	}
 	
-	list = g_list_next(list);		// fixme: ²òÊü
+	list = g_list_delete_link(list, list);
     }
     
     xfce_rc_close(rc);
@@ -248,7 +250,7 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
 	
 	g_object_unref(w);
 	
-	list = g_list_next(list);	// fixme: free
+	list = g_list_delete_link(list, list);
     }
     
     gtk_widget_destroy(oldbox);

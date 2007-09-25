@@ -48,7 +48,8 @@ GType mcc_graph_get_type(void) G_GNUC_CONST;
 GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
 	gint nbg, const GdkColor *bg,
-	gboolean dynamic_scaling);
+	gboolean dynamic_scaling,
+	const gchar *label, const gchar *sublabel);
 void mcc_graph_add(MccGraph *graph, MccValue *value);
 void mcc_graph_get_fg(MccGraph *graph, int i, GdkColor *fg);
 void mcc_graph_get_bg(MccGraph *graph, int i, GdkColor *bg);
