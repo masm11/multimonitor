@@ -46,6 +46,7 @@ typedef struct _MccGraphPrivate {
     gboolean dynamic_scaling;
     gint dynamic_scale;
     
+    gchar *fontname;
     gchar *label, *sublabel;
     PangoLayout *layout;
 } MccGraphPrivate;
@@ -188,7 +189,7 @@ static void create_layout(MccGraph *graph)
 {
     GtkWidget *widget = GTK_WIDGET(graph);
     
-    PangoFontDescription *font_desc = pango_font_description_from_string("sans 6");
+    PangoFontDescription *font_desc = pango_font_description_from_string(graph->priv->fontname);
     gtk_widget_modify_font(widget, font_desc);
     pango_font_description_free(font_desc);
     
@@ -415,6 +416,19 @@ void mcc_graph_set_bg(MccGraph *graph, int i, const GdkColor *bg)
     create_pixmap(graph);
 }
 
+void mcc_graph_set_font(MccGraph *graph, const gchar *fontname)
+{
+    if (graph->priv->fontname != NULL)
+	g_free(graph->priv->fontname);
+    graph->priv->fontname = g_strdup(fontname);
+    create_layout(graph);
+}
+
+const gchar *mcc_graph_get_font(MccGraph *graph)
+{
+    return graph->priv->fontname;
+}
+
 GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
 	gint nbg, const GdkColor *bg,
@@ -437,6 +451,7 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
     memcpy(priv->fg, fg, sizeof(GdkColor) * nfg);
     memcpy(priv->bg, bg, sizeof(GdkColor) * nbg);
     
+    priv->fontname = g_strdup("sans 6");
     priv->label = g_strdup(label);
     priv->sublabel = g_strdup(sublabel);
     

@@ -175,6 +175,13 @@ static void size_changed(GtkSpinButton *spinbutton, gpointer userdata)
     gtk_widget_set_size_request(GTK_WIDGET(graph), width, height);
 }
 
+static void font_changed(GtkFontButton *widget, gpointer user_data)
+{
+    MccGraph *graph = user_data;
+    const gchar *fontname = gtk_font_button_get_font_name(widget);
+    mcc_graph_set_font(graph, fontname);
+}
+
 static void delete_cb(GtkButton *button, gpointer userdata)
 {
     struct list_work_t *w = userdata;
@@ -276,6 +283,23 @@ static GtkWidget *list_create_page(
 	w = gtk_spin_button_new_with_range(1, 1000, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(w), width == -1 ? height : width);
 	g_signal_connect(w, "value-changed", G_CALLBACK(size_changed), graph);
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
+    }
+    
+    {
+	const gchar *fontname = mcc_graph_get_font(graph);
+	
+	tbl = gtk_table_new(1, 2, FALSE);
+	gtk_widget_show(tbl);
+	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
+	
+	w = gtk_label_new("Font");
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, 0, 1);
+	
+	w = gtk_font_button_new_with_font(fontname);
+	g_signal_connect(w, "font-set", G_CALLBACK(font_changed), graph);
 	gtk_widget_show(w);
 	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
     }

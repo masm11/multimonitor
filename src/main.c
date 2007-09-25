@@ -129,6 +129,8 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	    xfce_rc_write_int_entry(rc, "size", size);
 	}
 	
+	xfce_rc_write_entry(rc, "font", mcc_graph_get_font(graph));
+	
 	list = g_list_delete_link(list, list);
     }
     
@@ -196,6 +198,12 @@ static void load_config(void)
 		    height = size;
 		gtk_widget_set_size_request(g, width, height);
 	    }
+	}
+	
+	{
+	    const gchar *fontname = xfce_rc_read_entry(rc, "font", NULL);
+	    if (fontname != NULL)
+		mcc_graph_set_font(graph, fontname);
 	}
     }
     
