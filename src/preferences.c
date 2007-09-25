@@ -76,6 +76,7 @@ static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType
     GtkTreeViewColumn *column;
     
     w->vbox = gtk_vbox_new(FALSE, 0);
+    gtk_widget_show(w->vbox);
     
     GtkWidget *tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
     gtk_widget_show(tree);
@@ -131,19 +132,11 @@ static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType
 }
 
 
-
-enum {
-    LST_COL_LABEL,
-    LST_COL_PAGE,
-    LST_COL_DATASRC,
-    LST_COL_NR,
-};
-
 struct list_work_t {
+    GtkWidget *graph_box;
     GtkWidget *dialog;
-    GtkWidget *curr_page;
-    GtkWidget *page_box;
-    GtkListStore *store;
+    GtkWidget *notebook;
+    GtkWidget *new_page;
     
     GtkSizeGroup *grp_label;
     GtkSizeGroup *grp_ctrl;
@@ -187,23 +180,8 @@ static void font_changed(GtkFontButton *widget, gpointer user_data)
 
 static void delete_cb(GtkButton *button, gpointer userdata)
 {
-    struct list_work_t *w = userdata;
     GtkWidget *graph = g_object_get_data(G_OBJECT(button), "mcc-pref-graph");
     GtkWidget *page = g_object_get_data(G_OBJECT(button), "mcc-pref-page");
-    
-    GtkTreeIter iter;
-    if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(w->store), &iter)) {
-	while (TRUE) {
-	    GtkWidget *p;
-	    gtk_tree_model_get(GTK_TREE_MODEL(w->store), &iter, LST_COL_PAGE, &p, -1);
-	    if (p == page) {
-		gtk_list_store_remove(w->store, &iter);
-		break;
-	    }
-	    gtk_tree_model_iter_next(GTK_TREE_MODEL(w->store), &iter);
-	}
-    }
-    
     gtk_widget_destroy(page);
     gtk_widget_destroy(graph);
 }
@@ -215,6 +193,9 @@ static GtkWidget *list_create_page(
     gchar buf[128];
     
     GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+    g_object_set_data(G_OBJECT(vbox), "mcc-pref-graph", graph);
+    gtk_widget_show(vbox);
+    
     GtkWidget *w, *frm, *tbl;
     
     sprintf(buf, "%s - %s", class->label, src->sublabel);
@@ -318,8 +299,6 @@ static GtkWidget *list_create_page(
     }
     
     {
-	const gchar *fontname = mcc_graph_get_font(graph);
-	
 	tbl = gtk_table_new(1, 2, FALSE);
 	gtk_widget_show(tbl);
 	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
@@ -336,28 +315,9 @@ static GtkWidget *list_create_page(
     return vbox;
 }
 
-static void list_selected(GtkTreeSelection *sel, gpointer user_data)
-{
-    struct list_work_t *w = user_data;
-    GtkTreeModel *model;
-    GtkTreeIter iter;
-    if (gtk_tree_selection_get_selected(sel, &model, &iter)) {
-	GtkWidget *page;
-	gtk_tree_model_get(model, &iter, LST_COL_PAGE, &page, -1);
-	
-	if (w->curr_page != page) {
-	    if (w->curr_page != NULL)
-		gtk_widget_hide(w->curr_page);
-	    w->curr_page = page;
-	    gtk_widget_show(page);
-	}
-    }
-}
-
 static void list_add_page(GtkWidget *widget, gpointer data)
 {
     struct list_work_t *w = data;
-    GtkTreeIter iter;
     
     MccDataSource *src = g_object_get_data(G_OBJECT(widget), "mcc-datasrc");
     MccDataSourceClass *class = MCC_DATA_SOURCE_GET_CLASS(src);
@@ -367,19 +327,34 @@ static void list_add_page(GtkWidget *widget, gpointer data)
     gchar buf[128];
     sprintf(buf, "%s - %s", class->label, src->sublabel);
     
-    gtk_list_store_append(w->store, &iter);
-    gtk_box_pack_start(GTK_BOX(w->page_box), page, FALSE, FALSE, 0);
-    gtk_list_store_set(w->store, &iter,
-	    LST_COL_LABEL, buf,
-	    LST_COL_PAGE, page,
-	    LST_COL_DATASRC, src,
-	    -1);
+    gtk_notebook_append_page(
+	    GTK_NOTEBOOK(w->notebook), page, gtk_label_new(buf));
+    gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(w->notebook), page, TRUE);
 }
 
 static void list_add_graph(struct list_work_t *w, GType type, gint subidx)
 {
     GtkWidget *g = add_graph(type, subidx);
     list_add_page(g, w);
+}
+
+static void page_reordered_cb(GtkNotebook *notebook,
+	GtkWidget *child, guint page_num, gpointer user_data)
+{
+    struct list_work_t *lw = user_data;
+    gint idx = gtk_notebook_page_num(notebook, lw->new_page);
+    if (idx < 0)
+	return;
+    if (idx != 0) {
+	gtk_notebook_reorder_child(notebook, lw->new_page, 0);
+    } else {
+	gint num = gtk_notebook_get_n_pages(notebook);
+	for (gint i = 1; i < num; i++) {
+	    GtkWidget *page = gtk_notebook_get_nth_page(notebook, i);
+	    GtkWidget *g = g_object_get_data(G_OBJECT(page), "mcc-pref-graph");
+	    gtk_box_reorder_child(GTK_BOX(lw->graph_box), g, i - 1);
+	}
+    }
 }
 
 void preferences_create(GtkWidget *graph_box, GType *datasrc_types)
@@ -391,45 +366,24 @@ void preferences_create(GtkWidget *graph_box, GType *datasrc_types)
     w->grp_label = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
     w->grp_ctrl = gtk_size_group_new(GTK_SIZE_GROUP_BOTH);
     
+    w->graph_box = graph_box;
+    
     w->dialog = gtk_dialog_new_with_buttons(
 	    "Multi Monitor Preferences", NULL, GTK_DIALOG_MODAL,
 	    "Close", GTK_RESPONSE_CLOSE,
 	    NULL);
     
-    w->page_box = gtk_hbox_new(FALSE, 0);
-    gtk_widget_show(w->page_box);
-    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(w->dialog)->vbox), w->page_box, FALSE, FALSE, 0);
+    w->notebook = gtk_notebook_new();
+    g_signal_connect(w->notebook, "page-reordered", G_CALLBACK(page_reordered_cb), w);
+    gtk_notebook_set_scrollable(GTK_NOTEBOOK(w->notebook), TRUE);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(w->dialog)->vbox), w->notebook, FALSE, FALSE, 0);
     
-    w->store = gtk_list_store_new(LST_COL_NR, G_TYPE_STRING, GTK_TYPE_WIDGET, G_TYPE_POINTER);
-    GtkWidget *tree;
-    GtkCellRenderer *renderer;
-    GtkTreeViewColumn *column;
-    
-    tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(w->store));
-    gtk_widget_show(tree);
-    
-    GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree));
-    gtk_tree_selection_set_mode(sel, GTK_SELECTION_BROWSE);
-    g_signal_connect(G_OBJECT(sel), "changed", G_CALLBACK(list_selected), &work);
-    renderer = gtk_cell_renderer_text_new();
-    column = gtk_tree_view_column_new_with_attributes("Test", renderer,
-	    "text", LST_COL_LABEL,
-	    NULL);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column);
-    gtk_box_pack_start(GTK_BOX(w->page_box), tree, FALSE, FALSE, 0);
-    
-    {
-	GtkTreeIter iter;
-	gtk_list_store_append(w->store, &iter);
-	GtkWidget *page = new_create(w, graph_box, datasrc_types);
-	gtk_box_pack_start(GTK_BOX(w->page_box), page, FALSE, FALSE, 0);
-	gtk_list_store_set(w->store, &iter,
-		LST_COL_LABEL, "New",
-		LST_COL_PAGE, page,
-		-1);
-    }
+    w->new_page = new_create(w, graph_box, datasrc_types);
+    gtk_notebook_append_page(GTK_NOTEBOOK(w->notebook), w->new_page, gtk_label_new("New"));
     
     gtk_container_foreach(GTK_CONTAINER(graph_box), list_add_page, &work);
+    
+    gtk_widget_show_all(w->notebook);
     
     gtk_dialog_run(GTK_DIALOG(w->dialog));
     
