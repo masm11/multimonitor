@@ -36,8 +36,6 @@ struct _MccGraphPrivate;
 
 struct _MccGraph {
     GtkMisc misc;
-    
-    struct _MccGraphPrivate *priv;
 };
 
 struct _MccGraphClass {

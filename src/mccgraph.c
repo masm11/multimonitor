@@ -63,6 +63,11 @@ static void create_gc(MccGraph *graph);
 static void create_pixmap(MccGraph *graph);
 static void shift_and_draw(MccGraph *graph);
 
+static inline MccGraphPrivate *mcc_graph_get_private(MccGraph *graph)
+{
+    return G_TYPE_INSTANCE_GET_PRIVATE(graph, MCC_TYPE_GRAPH, MccGraphPrivate);
+}
+
 static void mcc_graph_class_init(MccGraphClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
@@ -76,32 +81,69 @@ static void mcc_graph_class_init(MccGraphClass *klass)
     widget_class->expose_event = mcc_graph_expose;
     widget_class->realize = mcc_graph_realize;
     widget_class->size_allocate = mcc_graph_size_allocate;
+    
+    g_type_class_add_private(klass, sizeof (MccGraphPrivate));
 }
 
 static void mcc_graph_init(MccGraph *self)
 {
-    self->priv = g_new0(struct _MccGraphPrivate, 1);
+    MccGraphPrivate *priv = mcc_graph_get_private(self);
     
-    self->priv->list = NULL;
-    self->priv->listlen = 0;
+    priv->list = NULL;
+    priv->listlen = 0;
     
-    self->priv->fg = NULL;
-    self->priv->nbg = 0;
-    self->priv->bg = NULL;
+    priv->fg = NULL;
+    priv->nbg = 0;
+    priv->bg = NULL;
     
-    self->priv->min = 0;
-    self->priv->max = 1.0;
+    priv->min = 0;
+    priv->max = 1.0;
     
-    self->priv->bd.red = 0xffff;
-    self->priv->bd.green = 0xffff;
-    self->priv->bd.blue = 0xffff;
+    priv->bd.red = 0xffff;
+    priv->bd.green = 0xffff;
+    priv->bd.blue = 0xffff;
     
-    self->priv->label = g_strdup("label");
-    self->priv->sublabel = g_strdup("sublabel");
+    priv->label = g_strdup("label");
+    priv->sublabel = g_strdup("sublabel");
 }
 
 static void mcc_graph_finalize(GObject *object)
 {
+    MccGraph *graph = MCC_GRAPH(object);
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    
+    while (priv->list != NULL) {
+	MccValue *v = priv->list->data;
+	priv->list = g_list_delete_link(priv->list, priv->list);
+	g_object_unref(v);
+    }
+    
+#define UNREF(p)  do { if (p != NULL) { g_object_unref(p); p = NULL; } } while (FALSE)
+#define FREE(p) do { if (p != NULL) { g_free(p); p = NULL; } } while (FALSE)
+    UNREF(priv->pixmap);
+    UNREF(priv->gc_copy);
+    
+    if (priv->gc_fg != NULL) {
+	for (gint i = 0; i < priv->nfg; i++)
+	    UNREF(priv->gc_fg[i]);
+	FREE(priv->gc_fg);
+    }
+    if (priv->gc_bg != NULL) {
+	for (gint i = 0; i < priv->nbg; i++)
+	    UNREF(priv->gc_bg[i]);
+	FREE(priv->gc_bg);
+    }
+    UNREF(priv->gc_bd);
+    
+    FREE(priv->fg);
+    FREE(priv->bg);
+    
+    FREE(priv->fontname);
+    FREE(priv->label);
+    FREE(priv->sublabel);
+    
+    UNREF(priv->layout);
+    
     (*G_OBJECT_CLASS(mcc_graph_parent_class)->finalize)(object);
 }
 
@@ -113,7 +155,6 @@ static void mcc_graph_destroy(GtkObject *object)
 static void mcc_graph_realize(GtkWidget *widget)
 {
     MccGraph *graph = MCC_GRAPH(widget);
-    MccGraphPrivate *priv = graph->priv;
     
     (*GTK_WIDGET_CLASS(mcc_graph_parent_class)->realize)(widget);
     
@@ -138,11 +179,13 @@ static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
     MccGraph *graph = MCC_GRAPH(widget);
     
     if (GTK_WIDGET_VISIBLE(widget) && GTK_WIDGET_MAPPED(widget)) {
-	gdk_draw_drawable(widget->window, graph->priv->gc_copy, graph->priv->pixmap,
+	MccGraphPrivate *priv = mcc_graph_get_private(graph);
+
+	gdk_draw_drawable(widget->window, priv->gc_copy, priv->pixmap,
 		0, 0,
-		widget->allocation.width - graph->priv->pix_width,
-		widget->allocation.height - graph->priv->pix_height,
-		graph->priv->pix_width, graph->priv->pix_height);
+		widget->allocation.width - priv->pix_width,
+		widget->allocation.height - priv->pix_height,
+		priv->pix_width, priv->pix_height);
 	
 	gtk_paint_layout(widget->style,
 		widget->window,
@@ -152,7 +195,7 @@ static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
 		widget,
 		"graph",
 		0, 0,
-		graph->priv->layout);
+		priv->layout);
 	
 	return TRUE;
     }
@@ -161,7 +204,7 @@ static gboolean mcc_graph_expose(GtkWidget *widget, GdkEventExpose *event)
 
 static gint calc_dynamic_scale(MccGraph *graph)
 {
-    MccGraphPrivate *priv = graph->priv;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
     
     if (!priv->dynamic_scaling)
 	return 1;
@@ -188,15 +231,16 @@ static gint calc_dynamic_scale(MccGraph *graph)
 static void create_layout(MccGraph *graph)
 {
     GtkWidget *widget = GTK_WIDGET(graph);
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
     
-    PangoFontDescription *font_desc = pango_font_description_from_string(graph->priv->fontname);
+    PangoFontDescription *font_desc = pango_font_description_from_string(priv->fontname);
     gtk_widget_modify_font(widget, font_desc);
     pango_font_description_free(font_desc);
     
-    if (graph->priv->layout != NULL)
-	g_object_unref(graph->priv->layout);
-    gchar *str = g_strdup_printf("%s\n%s", graph->priv->label, graph->priv->sublabel);
-    graph->priv->layout = gtk_widget_create_pango_layout(widget, str);
+    if (priv->layout != NULL)
+	g_object_unref(priv->layout);
+    gchar *str = g_strdup_printf("%s\n%s", priv->label, priv->sublabel);
+    priv->layout = gtk_widget_create_pango_layout(widget, str);
     g_free(str);
     
     GdkColor color = {
@@ -210,7 +254,7 @@ static void create_layout(MccGraph *graph)
 static void create_gc(MccGraph *graph)
 {
     GtkWidget *widget = &graph->misc.widget;
-    MccGraphPrivate *priv = graph->priv;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
     
     GdkColormap *cmap = gdk_colormap_get_system();
     
@@ -270,7 +314,7 @@ static void create_gc(MccGraph *graph)
 static void create_pixmap(MccGraph *graph)
 {
     GtkWidget *widget = &graph->misc.widget;
-    MccGraphPrivate *priv = graph->priv;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
     
     if (priv->pixmap != NULL) {
 	if (priv->pix_width != widget->allocation.width || priv->pix_height != widget->allocation.height) {
@@ -289,7 +333,7 @@ static void create_pixmap(MccGraph *graph)
     
     gint x;
     GList *lp;
-    for (lp = graph->priv->list, x = priv->pix_width - 1; lp != NULL; lp = lp->next, x--) {
+    for (lp = priv->list, x = priv->pix_width - 1; lp != NULL; lp = lp->next, x--) {
 	MccValue *value = lp->data;
 	gint col_bg = mcc_value_get_background(value);
 	gdk_draw_line(priv->pixmap, priv->gc_bg[col_bg], x, 0, x, priv->pix_height);
@@ -297,8 +341,8 @@ static void create_pixmap(MccGraph *graph)
 	    gdouble v = 0;
 	    for (gint j = 0; j <= i; j++)
 		v += mcc_value_get_value(value, j);
-	    if (graph->priv->dynamic_scaling)
-		v /= graph->priv->dynamic_scale;
+	    if (priv->dynamic_scaling)
+		v /= priv->dynamic_scale;
 	    gint col_fg = mcc_value_get_foreground(value, i);
 	    gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	    if (h > 0) {
@@ -324,7 +368,7 @@ static void create_pixmap(MccGraph *graph)
 
 static void shift_and_draw(MccGraph *graph)
 {
-    MccGraphPrivate *priv = graph->priv;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
     if (priv->pixmap != NULL) {
 	gdk_draw_drawable(priv->pixmap, priv->gc_copy, priv->pixmap,
 		1, 0, 0, 0, priv->pix_width - 1, priv->pix_height);
@@ -337,8 +381,8 @@ static void shift_and_draw(MccGraph *graph)
 	    gdouble v = 0;
 	    for (gint j = 0; j <= i; j++)
 		v += mcc_value_get_value(value, j);
-	    if (graph->priv->dynamic_scaling)
-		v /= graph->priv->dynamic_scale;
+	    if (priv->dynamic_scaling)
+		v /= priv->dynamic_scale;
 	    gint col_fg = mcc_value_get_foreground(value, i);
 	    gint h = (v - priv->min) * priv->pix_height / (priv->max - priv->min);
 	    if (h > 0) {
@@ -361,27 +405,30 @@ static void shift_and_draw(MccGraph *graph)
 
 void mcc_graph_add(MccGraph *graph, MccValue *value)
 {
-    g_object_ref(value);
-    graph->priv->list = g_list_prepend(graph->priv->list, value);
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
     
-    if (++graph->priv->listlen > graph->priv->pix_width) {
-	GList *last = g_list_nth(graph->priv->list, graph->priv->pix_width - 1);
+    g_object_ref(value);
+    
+    priv->list = g_list_prepend(priv->list, value);
+    
+    if (++priv->listlen > priv->pix_width) {
+	GList *last = g_list_nth(priv->list, priv->pix_width - 1);
 	if (last != NULL) {
 	    GList *lp;
 	    while ((lp = g_list_next(last)) != NULL) {
 		MccValue *v = lp->data;
-		graph->priv->list = g_list_delete_link(graph->priv->list, lp);
+		priv->list = g_list_delete_link(priv->list, lp);
 		g_object_unref(v);
-		graph->priv->listlen--;
+		priv->listlen--;
 	    }
 	}
     }
     
     gboolean recreate = FALSE;
-    if (graph->priv->dynamic_scaling) {
+    if (priv->dynamic_scaling) {
 	gint scale = calc_dynamic_scale(graph);
-	if (graph->priv->dynamic_scale != scale) {
-	    graph->priv->dynamic_scale = scale;
+	if (priv->dynamic_scale != scale) {
+	    priv->dynamic_scale = scale;
 	    recreate = TRUE;
 	}
     }
@@ -394,39 +441,45 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
 
 void mcc_graph_get_fg(MccGraph *graph, int i, GdkColor *fg)
 {
-    *fg = graph->priv->fg[i];
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    *fg = priv->fg[i];
 }
 
 void mcc_graph_get_bg(MccGraph *graph, int i, GdkColor *bg)
 {
-    *bg = graph->priv->bg[i];
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    *bg = priv->bg[i];
 }
 
 void mcc_graph_set_fg(MccGraph *graph, int i, const GdkColor *fg)
 {
-    graph->priv->fg[i] = *fg;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    priv->fg[i] = *fg;
     create_gc(graph);
     create_pixmap(graph);
 }
 
 void mcc_graph_set_bg(MccGraph *graph, int i, const GdkColor *bg)
 {
-    graph->priv->bg[i] = *bg;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    priv->bg[i] = *bg;
     create_gc(graph);
     create_pixmap(graph);
 }
 
 void mcc_graph_set_font(MccGraph *graph, const gchar *fontname)
 {
-    if (graph->priv->fontname != NULL)
-	g_free(graph->priv->fontname);
-    graph->priv->fontname = g_strdup(fontname);
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    if (priv->fontname != NULL)
+	g_free(priv->fontname);
+    priv->fontname = g_strdup(fontname);
     create_layout(graph);
 }
 
 const gchar *mcc_graph_get_font(MccGraph *graph)
 {
-    return graph->priv->fontname;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    return priv->fontname;
 }
 
 GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
@@ -438,7 +491,7 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
     MccGraph *graph;
     
     graph = g_object_new(MCC_TYPE_GRAPH, NULL);
-    MccGraphPrivate *priv = graph->priv;
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
     priv->nvalues = nvalues;
     priv->min = min;
     priv->max = max;
