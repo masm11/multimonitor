@@ -71,6 +71,7 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     datasrc_class->label = g_strdup("Battery");
     datasrc_class->sublabels = g_new0(gchar *, 2);
     datasrc_class->sublabels[0] = g_strdup("Battery");
+    datasrc_class->tick_per_read = 50;
     datasrc_class->set_subidx = mcc_src_battery_set_subidx;
     datasrc_class->read = mcc_src_battery_read;
     datasrc_class->get = mcc_src_battery_get;
@@ -189,6 +190,8 @@ static void mcc_src_battery_set_subidx(MccDataSource *datasrc)
     datasrc->default_bg[1].red = 0x8000;
     datasrc->default_bg[1].green = 0x0000;
     datasrc->default_bg[1].blue = 0x0000;
+    
+    datasrc->add_on_tick = FALSE;
     
     datasrc->sublabel = g_strdup(MCC_DATA_SOURCE_GET_CLASS(datasrc)->sublabels[datasrc->subidx]);
 }
