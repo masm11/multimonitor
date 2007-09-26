@@ -27,68 +27,79 @@ typedef struct _MccValuePrivate {
 
 G_DEFINE_TYPE(MccValue, mcc_value, G_TYPE_OBJECT)
 
-static void mcc_value_finalize(GObject *obj);;
+static void mcc_value_finalize(GObject *obj);
+
+static inline MccValuePrivate *mcc_value_get_private(MccValue *value)
+{
+    return G_TYPE_INSTANCE_GET_PRIVATE(value, MCC_TYPE_VALUE, MccValuePrivate);
+}
 
 static void mcc_value_class_init(MccValueClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     
     gobject_class->finalize = mcc_value_finalize;
+    
+    g_type_class_add_private(klass, sizeof (MccValuePrivate));
 }
 
 static void mcc_value_init(MccValue *self)
 {
-    self->priv = g_new0(struct _MccValuePrivate, 1);
+    MccValuePrivate *priv = mcc_value_get_private(self);
     
-    self->priv->values = NULL;
-    self->priv->fgs = NULL;
+    priv->values = NULL;
+    priv->fgs = NULL;
 }
 
 static void mcc_value_finalize(GObject *object)
 {
     MccValue *value = MCC_VALUE(object);
+    MccValuePrivate *priv = mcc_value_get_private(value);
     
-    g_free(value->priv->values);
-    g_free(value->priv->fgs);
-    
-    g_free(value->priv);
-    value->priv = NULL;
+    g_free(priv->values);
+    g_free(priv->fgs);
     
     (*G_OBJECT_CLASS(mcc_value_parent_class)->finalize)(object);
 }
 
 void mcc_value_set_value(MccValue *value, gint idx, gdouble val)
 {
-    g_assert((guint) idx < value->priv->nvalues);
-    value->priv->values[idx] = val;
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    g_assert((guint) idx < priv->nvalues);
+    priv->values[idx] = val;
 }
 
 gdouble mcc_value_get_value(MccValue *value, gint idx)
 {
-    g_assert((guint) idx < value->priv->nvalues);
-    return value->priv->values[idx];
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    g_assert((guint) idx < priv->nvalues);
+    return priv->values[idx];
 }
 
 void mcc_value_set_foreground(MccValue *value, gint idx, gint col)
 {
-    g_assert((guint) idx < value->priv->nvalues);
-    value->priv->fgs[idx] = col;
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    g_assert((guint) idx < priv->nvalues);
+    priv->fgs[idx] = col;
 }
 
 gint mcc_value_get_foreground(MccValue *value, gint idx)
 {
-    g_assert((guint) idx < value->priv->nvalues);
-    return value->priv->fgs[idx];
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    g_assert((guint) idx < priv->nvalues);
+    return priv->fgs[idx];
 }
 
 void mcc_value_set_background(MccValue *value, gint col)
 {
-    value->priv->bg = col;
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    priv->bg = col;
 }
 
 gint mcc_value_get_background(MccValue *value)
 {
-    return value->priv->bg;
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    return priv->bg;
 }
 
 // fixme: メモリ管理
@@ -96,9 +107,10 @@ MccValue *mcc_value_new(gint nvalues)
 {
     MccValue *value = g_object_new(MCC_TYPE_VALUE, NULL);
     
-    value->priv->nvalues = nvalues;
-    value->priv->values = g_new0(gdouble, nvalues);
-    value->priv->fgs = g_new0(gint, nvalues);
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    priv->nvalues = nvalues;
+    priv->values = g_new0(gdouble, nvalues);
+    priv->fgs = g_new0(gint, nvalues);
     
     return value;
 }

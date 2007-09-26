@@ -35,8 +35,6 @@ struct _MccValuePrivate;
 
 struct _MccValue {
     GObject object;
-    
-    struct _MccValuePrivate *priv;
 };
 
 struct _MccValueClass {
