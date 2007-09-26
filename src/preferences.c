@@ -75,18 +75,32 @@ static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType
     GtkCellRenderer *renderer;
     GtkTreeViewColumn *column;
     
-    w->vbox = gtk_vbox_new(FALSE, 0);
+    w->vbox = gtk_vbox_new(FALSE, 5);
+    gtk_container_set_border_width(GTK_CONTAINER(w->vbox), 5);
     gtk_widget_show(w->vbox);
     
+    GtkWidget *frame = gtk_frame_new("Data Source Selection");
+    gtk_container_set_border_width(GTK_CONTAINER(w->vbox), 5);
+    gtk_widget_show(frame);
+    gtk_box_pack_start(GTK_BOX(w->vbox), frame, FALSE, FALSE, 0);
+    
+    // frame の内側に隙間を作るための box。
+    GtkWidget *dummy_box = gtk_vbox_new(FALSE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(dummy_box), 5);
+    gtk_widget_show(dummy_box);
+    gtk_container_add(GTK_CONTAINER(frame), dummy_box);
+    
     GtkWidget *tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+    gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(tree), FALSE);
     gtk_widget_show(tree);
-    gtk_box_pack_start(GTK_BOX(w->vbox), tree, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(dummy_box), tree, TRUE, TRUE, 0);
     
     GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree));
     gtk_tree_selection_set_mode(sel, GTK_SELECTION_BROWSE);
     g_signal_connect(G_OBJECT(sel), "changed", G_CALLBACK(new_selected), w);
+    
     renderer = gtk_cell_renderer_text_new();
-    column = gtk_tree_view_column_new_with_attributes("Test", renderer,
+    column = gtk_tree_view_column_new_with_attributes("Item", renderer,
 	    "text", NEW_COL_LABEL,
 	    NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tree), column);
@@ -112,6 +126,8 @@ static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType
 		    -1);
 	}
     }
+    
+    gtk_tree_view_expand_all(GTK_TREE_VIEW(tree));
     
     GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
     gtk_widget_show(hbox);
