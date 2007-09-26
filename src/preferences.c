@@ -64,7 +64,7 @@ static void new_clicked(GtkWidget *widget, gpointer userdata)
 	list_add_graph(w->ww, w->type, w->subidx);
 }
 
-static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType *datasrc_types)
+static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType *datasrc_types, GtkSizeGroup *grp_ctrl)
 {
     struct new_work_t *w = g_new0(struct new_work_t, 1);
     
@@ -118,6 +118,7 @@ static GtkWidget *new_create(struct list_work_t *ww, GtkWidget *graph_box, GType
     gtk_box_pack_end(GTK_BOX(w->vbox), hbox, FALSE, FALSE, 0);
     
     w->btn = gtk_button_new_with_label("Add");
+    gtk_size_group_add_widget(grp_ctrl, w->btn);
     g_signal_connect(w->btn, "clicked", G_CALLBACK(new_clicked), w);
     gtk_widget_show(w->btn);
     gtk_box_pack_end(GTK_BOX(hbox), w->btn, FALSE, FALSE, 0);
@@ -190,33 +191,32 @@ static GtkWidget *list_create_page(
 	MccDataSource *src, MccGraph *graph, struct list_work_t *lw)
 {
     MccDataSourceClass *class = MCC_DATA_SOURCE_GET_CLASS(src);
-    gchar buf[128];
     
-    GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+    GtkWidget *vbox = gtk_vbox_new(FALSE, 5);
+    gtk_container_set_border_width(GTK_CONTAINER(vbox), 5);
     g_object_set_data(G_OBJECT(vbox), "mcc-pref-graph", graph);
     gtk_widget_show(vbox);
     
     GtkWidget *w, *frm, *tbl;
     
-    sprintf(buf, "%s - %s", class->label, src->sublabel);
-    w = gtk_label_new(buf);
-    gtk_misc_set_alignment(GTK_MISC(w), 0, 0.5);
-    gtk_widget_show(w);
-    gtk_box_pack_start(GTK_BOX(vbox), w, FALSE, FALSE, 0);
-    
     frm = gtk_frame_new("Foreground");
     gtk_widget_show(frm);
     gtk_box_pack_start(GTK_BOX(vbox), frm, FALSE, FALSE, 0);
     
-    tbl = gtk_table_new(src->nfg, 2, FALSE);
+    tbl = gtk_table_new((src->nfg + 1) / 2, 4, FALSE);
+    gtk_container_set_border_width(GTK_CONTAINER(tbl), 5);
+    gtk_table_set_row_spacings(GTK_TABLE(tbl), 2);
     gtk_widget_show(tbl);
     gtk_container_add(GTK_CONTAINER(frm), tbl);
     for (int i = 0; i < src->nfg; i++) {
+	int c = (i % 2) * 2;
+	int r = i / 2;
+	
 	w = gtk_label_new(src->fg_labels[i]);
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
 	gtk_size_group_add_widget(lw->grp_label, w);
 	gtk_widget_show(w);
-	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c, c + 1, r, r + 1);
 	
 	GdkColor fg;
 	mcc_graph_get_fg(MCC_GRAPH(graph), i, &fg);
@@ -227,22 +227,41 @@ static GtkWidget *list_create_page(
 	g_signal_connect(G_OBJECT(w), "color-set", G_CALLBACK(color_changed), NULL);
 	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
-	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, i, i + 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c + 1, c + 2, r, r + 1);
+    }
+    if (src->nfg % 2 != 0) {
+	int c = (src->nfg % 2) * 2;
+	int r = src->nfg / 2;
+	
+	w = gtk_label_new("");
+	gtk_size_group_add_widget(lw->grp_label, w);
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c, c + 1, r, r + 1);
+	
+	w = gtk_label_new("");
+	gtk_size_group_add_widget(lw->grp_ctrl, w);
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c + 1, c + 2, r, r + 1);
     }
     
     frm = gtk_frame_new("Background");
     gtk_widget_show(frm);
     gtk_box_pack_start(GTK_BOX(vbox), frm, FALSE, FALSE, 0);
     
-    tbl = gtk_table_new(src->nfg, 2, FALSE);
+    tbl = gtk_table_new((src->nbg + 1) / 2, 4, FALSE);
+    gtk_container_set_border_width(GTK_CONTAINER(tbl), 5);
+    gtk_table_set_row_spacings(GTK_TABLE(tbl), 2);
     gtk_widget_show(tbl);
     gtk_container_add(GTK_CONTAINER(frm), tbl);
     for (int i = 0; i < src->nbg; i++) {
+	int c = (i % 2) * 2;
+	int r = i / 2;
+	
 	w = gtk_label_new(src->bg_labels[i]);
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
 	gtk_size_group_add_widget(lw->grp_label, w);
 	gtk_widget_show(w);
-	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, i, i + 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c, c + 1, r, r + 1);
 	
 	GdkColor bg;
 	mcc_graph_get_bg(MCC_GRAPH(graph), i, &bg);
@@ -253,16 +272,31 @@ static GtkWidget *list_create_page(
 	g_signal_connect(G_OBJECT(w), "color-set", G_CALLBACK(color_changed), NULL);
 	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
-	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, i, i + 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c + 1, c + 2, r, r + 1);
     }
+    if (src->nbg % 2 != 0) {
+	int c = (src->nbg % 2) * 2;
+	int r = src->nbg / 2;
+	
+	w = gtk_label_new("");
+	gtk_size_group_add_widget(lw->grp_label, w);
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c, c + 1, r, r + 1);
+	
+	w = gtk_label_new("");
+	gtk_size_group_add_widget(lw->grp_ctrl, w);
+	gtk_widget_show(w);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, c + 1, c + 2, r, r + 1);
+    }
+    
+    tbl = gtk_table_new(2, 4, FALSE);
+    gtk_table_set_row_spacings(GTK_TABLE(tbl), 5);
+    gtk_widget_show(tbl);
+    gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
     
     {
 	gint width, height;
 	gtk_widget_get_size_request(GTK_WIDGET(graph), &width, &height);
-	
-	tbl = gtk_table_new(1, 2, FALSE);
-	gtk_widget_show(tbl);
-	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
 	
 	w = gtk_label_new("Size");
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
@@ -281,35 +315,27 @@ static GtkWidget *list_create_page(
     {
 	const gchar *fontname = mcc_graph_get_font(graph);
 	
-	tbl = gtk_table_new(1, 2, FALSE);
-	gtk_widget_show(tbl);
-	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
-	
 	w = gtk_label_new("Font");
 	gtk_misc_set_alignment(GTK_MISC(w), 1.0, 0.5);
 	gtk_size_group_add_widget(lw->grp_label, w);
 	gtk_widget_show(w);
-	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 0, 1, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 2, 3, 0, 1);
 	
 	w = gtk_font_button_new_with_font(fontname);
 	g_signal_connect(w, "font-set", G_CALLBACK(font_changed), graph);
 	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
-	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 3, 4, 0, 1);
     }
     
     {
-	tbl = gtk_table_new(1, 2, FALSE);
-	gtk_widget_show(tbl);
-	gtk_box_pack_start(GTK_BOX(vbox), tbl, FALSE, FALSE, 0);
-	
 	w = gtk_button_new_with_label("Delete");
 	g_object_set_data(G_OBJECT(w), "mcc-pref-graph", graph);
 	g_object_set_data(G_OBJECT(w), "mcc-pref-page", vbox);
 	g_signal_connect(w, "clicked", G_CALLBACK(delete_cb), lw);
 	gtk_size_group_add_widget(lw->grp_ctrl, w);
 	gtk_widget_show(w);
-	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 1, 2, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), w, 3, 4, 1, 2);
     }
     
     return vbox;
@@ -378,7 +404,7 @@ void preferences_create(GtkWidget *graph_box, GType *datasrc_types)
     gtk_notebook_set_scrollable(GTK_NOTEBOOK(w->notebook), TRUE);
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(w->dialog)->vbox), w->notebook, FALSE, FALSE, 0);
     
-    w->new_page = new_create(w, graph_box, datasrc_types);
+    w->new_page = new_create(w, graph_box, datasrc_types, w->grp_ctrl);
     gtk_notebook_append_page(GTK_NOTEBOOK(w->notebook), w->new_page, gtk_label_new("New"));
     
     gtk_container_foreach(GTK_CONTAINER(graph_box), list_add_page, &work);
