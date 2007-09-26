@@ -85,20 +85,9 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	xfce_rc_set_group(rc, grp);
 	
 	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
-	GType type = src->object.g_type_instance.g_class->g_type;	// fixme: ... :-(
 	
-	gint src_idx = -1;
-	for (gint i = 0; datasrc_types[i] != 0; i++) {
-	    if (datasrc_types[i] == type) {
-		src_idx = i;
-		break;
-	    }
-	}
-	
-	if (src_idx >= 0) {
-	    xfce_rc_write_int_entry(rc, "datasrc_index", src_idx);
-	    xfce_rc_write_int_entry(rc, "datasrc_subindex", src->subidx);
-	}
+	xfce_rc_write_entry(rc, "datasrc_name", g_type_name_from_instance(src));
+	xfce_rc_write_int_entry(rc, "datasrc_subindex", src->subidx);
 	
 	for (int i = 0; i < src->nfg; i++) {
 	    GdkColor col;
@@ -157,14 +146,20 @@ static void load_config(void)
 	sprintf(grp, "graph%d", no);
 	xfce_rc_set_group(rc, grp);
 	
-	gint idx = xfce_rc_read_int_entry(rc, "datasrc_index", -1);
+	const gchar *srcname = xfce_rc_read_entry(rc, "datasrc_name", NULL);
 	gint subidx = xfce_rc_read_int_entry(rc, "datasrc_subindex", -1);
-	if (idx < 0 || subidx < 0) {
+	if (srcname == NULL || subidx < 0) {
 	    // これが得られなかったら、どうにもならん。
 	    continue;
 	}
 	
-	GtkWidget *g = add_graph(datasrc_types[idx], subidx);
+	GType type = g_type_from_name(srcname);
+	if (type == 0) {
+	    // そんな class は知らねー。
+	    continue;
+	}
+	
+	GtkWidget *g = add_graph(type, subidx);
 	MccGraph *graph = MCC_GRAPH(g);
 	
 	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
