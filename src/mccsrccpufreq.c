@@ -19,7 +19,7 @@
 #include <string.h>
 #include "mccsrccpufreq.h"
 
-static gint cpufreq_get_cpus(void);
+static void cpufreq_get_conf(gint *ncpus, gint64 *maxfreq);
 static void cpufreq_read_data(gint64 *ptr, gint nr);
 
 static void mcc_src_cpu_freq_class_init(gpointer klass, gpointer class_data);
@@ -73,7 +73,8 @@ static void mcc_src_cpu_freq_class_init(gpointer klass, gpointer class_data)
     datasrc_class->read = mcc_src_cpu_freq_read;
     datasrc_class->get = mcc_src_cpu_freq_get;
     
-    src_class->ncpu = cpufreq_get_cpus();
+    cpufreq_get_conf(&src_class->ncpu, &src_class->maxfreq);
+    
     src_class->olddata = g_new0(gint64, src_class->ncpu);
     src_class->newdata = g_new0(gint64, src_class->ncpu);
     
@@ -93,16 +94,34 @@ static void mcc_src_cpu_freq_read(MccDataSourceClass *datasrc_class)
     cpufreq_read_data(src_class->newdata, src_class->ncpu);
 }
 
-static gint cpufreq_get_cpus(void)
+static void cpufreq_get_conf(gint *ncpus, gint64 *maxfreq)
 {
-    for (gint n = 0; ; n++) {
+    gint n = 0;
+    gint max = 0;
+    while (TRUE) {
 	FILE *fp;
 	char buf[1024];
 	sprintf(buf, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", n);
 	if ((fp = fopen(buf, "rt")) == NULL)
-	    return n;
+	    break;
 	fclose(fp);
+	
+	sprintf(buf, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_available_frequencies", n);
+	if ((fp = fopen(buf, "rt")) == NULL)
+	    break;
+	
+	gint f;
+	while (fscanf(fp, "%d", &f) == 1) {
+	    if (f > max)
+		max = f;
+	}
+	fclose(fp);
+	
+	n++;
     }
+    
+    *ncpus = n;
+    *maxfreq = (gint64) max * 1000;
 }
 
 static void cpufreq_read_data(gint64 *ptr, gint nr)
@@ -135,7 +154,7 @@ static void mcc_src_cpu_freq_finalize(GObject *object)
 static void mcc_src_cpu_freq_set_subidx(MccDataSource *datasrc)
 {
     datasrc->min = 0.0;
-    datasrc->max = 2001000000;
+    datasrc->max = MCC_SRC_CPU_FREQ_GET_CLASS(datasrc)->maxfreq;
     datasrc->nvalues = 1;
     
     datasrc->nfg = 1;
