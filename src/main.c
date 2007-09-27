@@ -8,6 +8,7 @@
 #include "mccsrccpuload.h"
 #include "mccsrcbattery.h"
 #include "mccsrcloadavg.h"
+#include "mccsrcmemory.h"
 #include "preferences.h"
 #include "main.h"
 
@@ -279,6 +280,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 	MCC_TYPE_SRC_CPU_LOAD,
 	MCC_TYPE_SRC_BATTERY,
 	MCC_TYPE_SRC_LOAD_AVG,
+	MCC_TYPE_SRC_MEMORY,
     };
     datasrc_types = g_new0(GType, sizeof types / sizeof types[0] + 1);
     memcpy(datasrc_types, types, sizeof types);
