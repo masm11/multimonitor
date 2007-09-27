@@ -439,29 +439,33 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
 	create_pixmap(graph);
 }
 
-void mcc_graph_get_fg(MccGraph *graph, int i, GdkColor *fg)
+void mcc_graph_get_fg(MccGraph *graph, gint i, GdkColor *fg)
 {
     MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    g_return_if_fail((guint) i < priv->nfg);
     *fg = priv->fg[i];
 }
 
-void mcc_graph_get_bg(MccGraph *graph, int i, GdkColor *bg)
+void mcc_graph_get_bg(MccGraph *graph, gint i, GdkColor *bg)
 {
     MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    g_return_if_fail((guint) i < priv->nbg);
     *bg = priv->bg[i];
 }
 
-void mcc_graph_set_fg(MccGraph *graph, int i, const GdkColor *fg)
+void mcc_graph_set_fg(MccGraph *graph, gint i, const GdkColor *fg)
 {
     MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    g_return_if_fail((guint) i < priv->nfg);
     priv->fg[i] = *fg;
     create_gc(graph);
     create_pixmap(graph);
 }
 
-void mcc_graph_set_bg(MccGraph *graph, int i, const GdkColor *bg)
+void mcc_graph_set_bg(MccGraph *graph, gint i, const GdkColor *bg)
 {
     MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    g_return_if_fail((guint) i < priv->nbg);
     priv->bg[i] = *bg;
     create_gc(graph);
     create_pixmap(graph);
