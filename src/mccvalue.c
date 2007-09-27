@@ -71,28 +71,28 @@ gint mcc_value_get_nvalues(MccValue *value)
 void mcc_value_set_value(MccValue *value, gint idx, gdouble val)
 {
     MccValuePrivate *priv = mcc_value_get_private(value);
-    g_assert((guint) idx < priv->nvalues);
+    g_return_if_fail((guint) idx < priv->nvalues);
     priv->values[idx] = val;
 }
 
 gdouble mcc_value_get_value(MccValue *value, gint idx)
 {
     MccValuePrivate *priv = mcc_value_get_private(value);
-    g_assert((guint) idx < priv->nvalues);
+    g_return_val_if_fail((guint) idx < priv->nvalues, 0);
     return priv->values[idx];
 }
 
 void mcc_value_set_foreground(MccValue *value, gint idx, gint col)
 {
     MccValuePrivate *priv = mcc_value_get_private(value);
-    g_assert((guint) idx < priv->nvalues);
+    g_return_if_fail((guint) idx < priv->nvalues);
     priv->fgs[idx] = col;
 }
 
 gint mcc_value_get_foreground(MccValue *value, gint idx)
 {
     MccValuePrivate *priv = mcc_value_get_private(value);
-    g_assert((guint) idx < priv->nvalues);
+    g_return_val_if_fail((guint) idx < priv->nvalues, 0);
     return priv->fgs[idx];
 }
 
