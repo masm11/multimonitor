@@ -8,6 +8,8 @@
 #include "mccsrccpuload.h"
 #include "mccsrcbattery.h"
 #include "mccsrcloadavg.h"
+#include "preferences.h"
+#include "main.h"
 
 static GType *datasrc_types;
 
@@ -87,7 +89,7 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	
 	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
 	
-	xfce_rc_write_entry(rc, "datasrc_name", g_type_name_from_instance(src));
+	xfce_rc_write_entry(rc, "datasrc_name", g_type_name_from_instance(&src->object.g_type_instance));
 	xfce_rc_write_int_entry(rc, "datasrc_subindex", src->subidx);
 	
 	for (int i = 0; i < src->nfg; i++) {

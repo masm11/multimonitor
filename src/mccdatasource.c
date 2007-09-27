@@ -35,8 +35,6 @@ static void mcc_data_source_get_property(
 	GParamSpec *pspec);
 static void mcc_data_source_finalize(GObject *obj);
 
-static GList *class_list = NULL;
-
 static void mcc_data_source_class_init(MccDataSourceClass *klass)
 {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);

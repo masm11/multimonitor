@@ -20,6 +20,8 @@
 #include <string.h>
 #include "mccgraph.h"
 #include "mccdatasource.h"
+#include "main.h"
+#include "preferences.h"
 
 enum {
     NEW_COL_LABEL,
@@ -206,8 +208,6 @@ static void delete_cb(GtkButton *button, gpointer userdata)
 static GtkWidget *list_create_page(
 	MccDataSource *src, MccGraph *graph, struct list_work_t *lw)
 {
-    MccDataSourceClass *class = MCC_DATA_SOURCE_GET_CLASS(src);
-    
     GtkWidget *vbox = gtk_vbox_new(FALSE, 5);
     gtk_container_set_border_width(GTK_CONTAINER(vbox), 5);
     g_object_set_data(G_OBJECT(vbox), "mcc-pref-graph", graph);
