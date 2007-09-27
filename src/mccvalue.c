@@ -62,6 +62,12 @@ static void mcc_value_finalize(GObject *object)
     (*G_OBJECT_CLASS(mcc_value_parent_class)->finalize)(object);
 }
 
+gint mcc_value_get_nvalues(MccValue *value)
+{
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    return priv->nvalues;
+}
+
 void mcc_value_set_value(MccValue *value, gint idx, gdouble val)
 {
     MccValuePrivate *priv = mcc_value_get_private(value);
@@ -102,8 +108,17 @@ gint mcc_value_get_background(MccValue *value)
     return priv->bg;
 }
 
-// fixme: メモリ管理
-MccValue *mcc_value_new(gint nvalues)
+static void mcc_value_clear(MccValue *value)
+{
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    for (gint i = 0; i < priv->nvalues; i++) {
+	priv->values[i] = 0;
+	priv->fgs[i] = 0;
+    }
+    priv->bg = 0;
+}
+
+static MccValue *mcc_value_new_internal(gint nvalues)
 {
     MccValue *value = g_object_new(MCC_TYPE_VALUE, NULL);
     
@@ -113,4 +128,48 @@ MccValue *mcc_value_new(gint nvalues)
     priv->fgs = g_new0(gint, nvalues);
     
     return value;
+}
+
+/****************************************************************/
+
+/* MccValue のプール。
+ * 初期化や解放の処理を避けるため、
+ * 要らなくなった MccValue をここに貯めておく。
+ * nvalues ごとに。
+ */
+
+static GHashTable *hash = NULL;
+
+MccValue *mcc_value_new(gint nvalues)
+{
+    if (hash == NULL)
+	hash = g_hash_table_new(NULL, NULL);
+    
+    GList *list = g_hash_table_lookup(hash, GINT_TO_POINTER(nvalues));
+    if (list != NULL) {
+	MccValue *value = list->data;
+	list = g_list_delete_link(list, list);
+	g_hash_table_insert(hash, GINT_TO_POINTER(nvalues), list);
+	mcc_value_clear(value);
+	return value;
+    }
+    return mcc_value_new_internal(nvalues);
+}
+
+void mcc_value_ref(MccValue *value)
+{
+    g_object_ref(value);
+}
+
+void mcc_value_unref(MccValue *value)
+{
+    if (value->object.ref_count >= 2) {
+	g_object_unref(value);
+	return;
+    }
+    
+    gint nvalues = mcc_value_get_nvalues(value);
+    GList *list = g_hash_table_lookup(hash, GINT_TO_POINTER(nvalues));
+    list = g_list_prepend(list, value);
+    g_hash_table_insert(hash, GINT_TO_POINTER(nvalues), list);
 }

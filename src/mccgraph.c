@@ -115,7 +115,7 @@ static void mcc_graph_finalize(GObject *object)
     while (priv->list != NULL) {
 	MccValue *v = priv->list->data;
 	priv->list = g_list_delete_link(priv->list, priv->list);
-	g_object_unref(v);
+	mcc_value_unref(v);
     }
     
 #define UNREF(p)  do { if (p != NULL) { g_object_unref(p); p = NULL; } } while (FALSE)
@@ -407,7 +407,7 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
 {
     MccGraphPrivate *priv = mcc_graph_get_private(graph);
     
-    g_object_ref(value);
+    mcc_value_ref(value);
     
     priv->list = g_list_prepend(priv->list, value);
     
@@ -418,7 +418,7 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
 	    while ((lp = g_list_next(last)) != NULL) {
 		MccValue *v = lp->data;
 		priv->list = g_list_delete_link(priv->list, lp);
-		g_object_unref(v);
+		mcc_value_unref(v);
 		priv->listlen--;
 	    }
 	}

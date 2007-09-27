@@ -28,6 +28,7 @@ static gboolean timer(gpointer data)
 	if (src->add_on_tick || mcc_data_source_has_new_data(src)) {
 	    MccValue *value = mcc_data_source_get(src);
 	    mcc_graph_add(graph, value);
+	    mcc_value_unref(value);
 	}
 	
 	list = g_list_delete_link(list, list);
