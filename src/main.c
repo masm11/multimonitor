@@ -277,8 +277,8 @@ static void plugin_start(XfcePanelPlugin *plg)
     plugin = plg;
     
     GType types[] = {
-	MCC_TYPE_SRC_CPU_FREQ,
 	MCC_TYPE_SRC_CPU_LOAD,
+	MCC_TYPE_SRC_CPU_FREQ,
 	MCC_TYPE_SRC_BATTERY,
 	MCC_TYPE_SRC_LOAD_AVG,
 	MCC_TYPE_SRC_MEMORY,
