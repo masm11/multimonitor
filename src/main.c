@@ -324,7 +324,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 	add_graph(type, 0);
     }
     
-    g_timeout_add(100, timer, NULL);
+    g_timeout_add(250, timer, NULL);
     
     gtk_main();
     

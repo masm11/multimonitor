@@ -72,7 +72,7 @@ static void mcc_src_load_avg_class_init(gpointer klass, gpointer class_data)
     datasrc_class->sublabels[0] = g_strdup("1 min");
     datasrc_class->sublabels[1] = g_strdup("5 min");
     datasrc_class->sublabels[2] = g_strdup("15 min");
-    datasrc_class->tick_per_read = 50;
+    datasrc_class->tick_per_read = 20;
     datasrc_class->set_subidx = mcc_src_load_avg_set_subidx;
     datasrc_class->read = mcc_src_load_avg_read;
     datasrc_class->get = mcc_src_load_avg_get;

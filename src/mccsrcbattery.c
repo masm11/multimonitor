@@ -71,7 +71,7 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     datasrc_class->label = g_strdup("Battery");
     datasrc_class->sublabels = g_new0(gchar *, 2);
     datasrc_class->sublabels[0] = g_strdup("Battery");
-    datasrc_class->tick_per_read = 50;
+    datasrc_class->tick_per_read = 20;
     datasrc_class->set_subidx = mcc_src_battery_set_subidx;
     datasrc_class->read = mcc_src_battery_read;
     datasrc_class->get = mcc_src_battery_get;
