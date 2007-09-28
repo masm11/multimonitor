@@ -42,7 +42,7 @@ typedef struct _MccGraphPrivate {
     
     GdkColor bd;
     
-    gint min, max;
+    gdouble min, max;
     gboolean dynamic_scaling;
     gint dynamic_scale;
     
