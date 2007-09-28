@@ -161,8 +161,8 @@ static void mcc_src_cpu_freq_set_subidx(MccDataSource *datasrc)
     datasrc->fg_labels = g_new0(gchar *, 2);
     datasrc->fg_labels[0] = g_strdup("Frequency");
     datasrc->default_fg = g_new0(GdkColor, 1);
-    datasrc->default_fg[0].red = 0xffff;
-    datasrc->default_fg[0].green = 0xffff;
+    datasrc->default_fg[0].red = 0x0000;
+    datasrc->default_fg[0].green = 0xb1b1;
     datasrc->default_fg[0].blue = 0xffff;
     
     datasrc->nbg = 1;

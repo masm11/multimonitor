@@ -165,9 +165,9 @@ static void mcc_src_cpu_load_set_subidx(MccDataSource *datasrc)
     datasrc->default_fg[0].red = 0x0000;	// user
     datasrc->default_fg[0].green = 0x0000;
     datasrc->default_fg[0].blue = 0xffff;
-    datasrc->default_fg[1].red = 0xffff;	// nice
-    datasrc->default_fg[1].green = 0x0000;
-    datasrc->default_fg[1].blue = 0x0000;
+    datasrc->default_fg[1].red = 0x8080;	// nice
+    datasrc->default_fg[1].green = 0x8080;
+    datasrc->default_fg[1].blue = 0xffff;
     datasrc->default_fg[2].red = 0xffff;	// sys
     datasrc->default_fg[2].green = 0x0000;
     datasrc->default_fg[2].blue = 0xffff;
@@ -176,13 +176,13 @@ static void mcc_src_cpu_load_set_subidx(MccDataSource *datasrc)
     datasrc->default_fg[3].blue = 0x0000;
     datasrc->default_fg[4].red = 0x0000;	// irq
     datasrc->default_fg[4].green = 0xffff;
-    datasrc->default_fg[4].blue = 0xffff;
-    datasrc->default_fg[5].red = 0xffff;	// softirq
+    datasrc->default_fg[4].blue = 0x0000;
+    datasrc->default_fg[5].red = 0x0000;	// softirq
     datasrc->default_fg[5].green = 0xffff;
     datasrc->default_fg[5].blue = 0x0000;
-    datasrc->default_fg[6].red = 0xffff;	// steal
+    datasrc->default_fg[6].red = 0x0000;	// steal
     datasrc->default_fg[6].green = 0xffff;
-    datasrc->default_fg[6].blue = 0xffff;
+    datasrc->default_fg[6].blue = 0x0000;
     
     datasrc->nbg = 1;
     datasrc->bg_labels = g_new0(gchar *, 2);

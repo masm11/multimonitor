@@ -172,10 +172,10 @@ static void mcc_src_battery_set_subidx(MccDataSource *datasrc)
     datasrc->fg_labels[0] = g_strdup("Not Charging");
     datasrc->fg_labels[1] = g_strdup("Charging");
     datasrc->default_fg = g_new0(GdkColor, 2);
-    datasrc->default_fg[0].red = 0x0000;	// user
+    datasrc->default_fg[0].red = 0x0000;
     datasrc->default_fg[0].green = 0x0000;
     datasrc->default_fg[0].blue = 0xffff;
-    datasrc->default_fg[1].red = 0x0000;	// nice
+    datasrc->default_fg[1].red = 0x0000;
     datasrc->default_fg[1].green = 0xffff;
     datasrc->default_fg[1].blue = 0xffff;
     
@@ -187,9 +187,9 @@ static void mcc_src_battery_set_subidx(MccDataSource *datasrc)
     datasrc->default_bg[0].red = 0x0000;
     datasrc->default_bg[0].green = 0x0000;
     datasrc->default_bg[0].blue = 0x0000;
-    datasrc->default_bg[1].red = 0x8000;
-    datasrc->default_bg[1].green = 0x0000;
-    datasrc->default_bg[1].blue = 0x0000;
+    datasrc->default_bg[1].red = 0x0000;
+    datasrc->default_bg[1].green = 0x4040;
+    datasrc->default_bg[1].blue = 0x4040;
     
     datasrc->add_on_tick = FALSE;
     
