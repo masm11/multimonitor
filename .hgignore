@@ -17,3 +17,4 @@
 ^src/\.deps/
 ^stamp-h1$
 ^src/multi-monitor$
+^multi-monitor.desktop$
