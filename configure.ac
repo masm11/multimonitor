@@ -20,10 +20,6 @@ fi
 AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h unistd.h])
 
-# Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_C_INLINE
-
 # Checks for library functions.
 AC_CHECK_FUNCS([memset strstr])
 

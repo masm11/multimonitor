@@ -1,4 +1,6 @@
-libexec_PROGRAMS = multi-monitor
+pkglibexec_PROGRAMS = multi-monitor
+
+pkglibexecdir = $(libexecdir)/xfce4
 
 multi_monitor_SOURCES = \
     main.c		\
