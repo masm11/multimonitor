@@ -95,7 +95,7 @@ static void mcc_src_battery_read(MccDataSourceClass *datasrc_class)
 static gint32 battery_read_last_full_capacity(void)
 {
     FILE *fp;
-    gint32 full;
+    gint32 full = 0;
     char buf[1024];
     
     if ((fp = fopen("/proc/acpi/battery/BAT0/info", "rt")) != NULL) {
