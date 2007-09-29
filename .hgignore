@@ -16,3 +16,4 @@
 ^config\.status$
 ^src/\.deps/
 ^stamp-h1$
+^src/multi-monitor$
