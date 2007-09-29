@@ -1,0 +1,33 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.61)
+AC_INIT(src/mccgraph.c)
+AM_INIT_AUTOMAKE(multi-monitor, 0.1)
+AC_CONFIG_SRCDIR([src/mccgraph.c])
+AM_CONFIG_HEADER([config.h])
+
+# Checks for programs.
+AC_PROG_CC_C99
+
+if test "x$ac_cv_prog_cc_c99" = xno; then
+  AC_MSG_ERROR([You need C99 compiler.])
+fi
+
+# Checks for libraries.
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([string.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+
+# Checks for library functions.
+AC_CHECK_FUNCS([memset strstr])
+
+# xfce and gtk
+PKG_CHECK_MODULES(GTK, libxfce4panel-1.0 pangoft2 gtk+-2.0 >= 2.10 glib-2.0)
+
+AC_OUTPUT([Makefile src/Makefile])
