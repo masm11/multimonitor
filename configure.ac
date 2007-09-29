@@ -26,4 +26,8 @@ AC_CHECK_FUNCS([memset strstr])
 # xfce and gtk
 PKG_CHECK_MODULES(GTK, libxfce4panel-1.0 pangoft2 gtk+-2.0 >= 2.10 glib-2.0)
 
+# installdirs
+AC_SUBST(pkgdatadir, '$(datarootdir)/xfce4/panel-plugins')
+AC_SUBST(pkglibexecdir, '$(libexecdir)/xfce4/panel-plugins')
+
 AC_OUTPUT([Makefile src/Makefile])

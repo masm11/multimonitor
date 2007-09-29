@@ -4,4 +4,4 @@ Encoding=UTF-8
 Name=Multi Monitor
 Comment=Multi Monitor
 ; Icon=cpu
-X-XFCE-Exec=@LIBEXECDIR@/multi-monitor
+X-XFCE-Exec=@PKGLIBEXECDIR@/multi-monitor
