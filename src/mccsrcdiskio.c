@@ -145,7 +145,7 @@ static void mcc_src_disk_io_finalize(GObject *object)
 static void mcc_src_disk_io_set_subidx(MccDataSource *datasrc)
 {
     datasrc->min = 0.0;
-    datasrc->max = 16 * 1024 * 1024;
+    datasrc->max = 1 * 1024 * 1024;
     datasrc->nvalues = NR_DATA;
     
     datasrc->nfg = NR_DATA;
@@ -167,6 +167,8 @@ static void mcc_src_disk_io_set_subidx(MccDataSource *datasrc)
     datasrc->default_bg[0].red = 0x0000;
     datasrc->default_bg[0].green = 0x0000;
     datasrc->default_bg[0].blue = 0x0000;
+    
+    datasrc->dynamic_scaling = TRUE;
     
     datasrc->sublabel = g_strdup(MCC_DATA_SOURCE_GET_CLASS(datasrc)->sublabels[datasrc->subidx]);
 }
