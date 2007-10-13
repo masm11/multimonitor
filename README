@@ -37,9 +37,9 @@ Multi Monitor for Xfce
   CPU Load   CPU 負荷             0%     100%
   CPU Freq   CPU 周波数           0Hz    最大周波数
   Battery    バッテリ残量         0%     100%
-  Load AVG   負荷平均             0      -
+  Load AVG   負荷平均             0      1.0
   Memory     メモリ使用量         0Bytes 全物理メモリ
-  Disk I/O   ディスクアクセス量   0MB/s  10MB/s
+  Disk I/O   ディスクアクセス量   0MB/s  1MB/s
 
 
 ライセンス
