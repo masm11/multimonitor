@@ -90,6 +90,12 @@ static void mcc_src_battery_read(MccDataSourceClass *datasrc_class)
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * src_class->nbatt);
     battery_read_data(src_class->newdata, src_class->last_full_capacity);
+    
+    gint ratio = src_class->newdata[0].ratio * 100;
+    if (src_class->newdata[0].ac)
+	battalert_clear();
+    else
+	battalert_alert(ratio);
 }
 
 static gint32 battery_read_last_full_capacity(void)
