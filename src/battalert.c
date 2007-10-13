@@ -17,6 +17,7 @@
 
 #include <gtk/gtk.h>
 #include <string.h>
+#include "battalert.h"
 
 /*
  *              critical

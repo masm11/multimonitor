@@ -16,6 +16,7 @@
  */
 
 #include <string.h>
+#include "battalert.h"
 #include "mccsrcbattery.h"
 
 static gint32 battery_read_last_full_capacity(void);
@@ -79,6 +80,8 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     src_class->olddata = g_new0(data_per_batt, src_class->nbatt);
     src_class->newdata = g_new0(data_per_batt, src_class->nbatt);
     src_class->last_full_capacity = battery_read_last_full_capacity();
+    
+    battalert_init();
     
     battery_read_data(src_class->newdata, src_class->last_full_capacity);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * src_class->nbatt);
