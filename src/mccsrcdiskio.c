@@ -152,7 +152,7 @@ static void mcc_src_disk_io_set_subidx(MccDataSource *datasrc)
     datasrc->fg_labels = g_new0(gchar *, NR_DATA);
     datasrc->fg_labels[0] = g_strdup("Read");
     datasrc->fg_labels[1] = g_strdup("Write");
-    datasrc->default_fg = g_new0(GdkColor, NR_DATA - 1);
+    datasrc->default_fg = g_new0(GdkColor, NR_DATA);
     datasrc->default_fg[0].red = 0x0000;
     datasrc->default_fg[0].green = 0xffff;
     datasrc->default_fg[0].blue = 0x0000;
