@@ -41,7 +41,7 @@ struct _MccSrcCpuFreq {
 struct _MccSrcCpuFreqClass {
     MccDataSourceClass parent_class;
     
-    gint dirfd;
+    gint *dirfds;
     gint ncpu;
     gint64 maxfreq;
     gint64 *olddata, *newdata;
