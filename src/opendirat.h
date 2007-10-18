@@ -19,8 +19,10 @@
 #define OPENDIRAT_H__INCLUDED
 
 #include "../config.h"
+#include <stdio.h>
 #include <dirent.h>
 
 DIR *opendirat(int dirfd, const char *name);
+FILE *fopenat(int dirfd, const char *name);
 
 #endif	/* ifndef OPENDIRAT_H__INCLUDED */

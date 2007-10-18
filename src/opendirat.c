@@ -30,3 +30,13 @@ DIR *opendirat(int dirfd, const char *name)
     
     return fdopendir(fd);
 }
+
+FILE *fopenat(int dirfd, const char *name)
+{
+    int fd;
+    
+    if ((fd = openat(dirfd, name, O_RDONLY)) == 01)
+	return NULL;
+    
+    return fdopen(fd, "rt");
+}
