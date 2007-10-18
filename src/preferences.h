@@ -18,6 +18,7 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
+#include "../config.h"
 #include <gtk/gtkwidget.h>
 
 void preferences_create(GtkWidget *graph_box, GType *datasrc_types);

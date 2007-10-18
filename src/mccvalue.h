@@ -18,6 +18,7 @@
 #ifndef MCC_VALUE_H
 #define MCC_VALUE_H
 
+#include "../config.h"
 #include <glib-object.h>
 
 #define MCC_TYPE_VALUE                  (mcc_value_get_type ())

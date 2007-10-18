@@ -18,6 +18,7 @@
 #ifndef MCC_SRC_CPU_FREQ_H
 #define MCC_SRC_CPU_FREQ_H
 
+#include "../config.h"
 #include <glib-object.h>
 #include "mccdatasource.h"
 

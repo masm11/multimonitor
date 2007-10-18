@@ -14,6 +14,8 @@ if test "x$ac_cv_prog_cc_c99" = xno; then
   AC_MSG_ERROR([You need C99 compiler.])
 fi
 
+AC_GNU_SOURCE
+
 # Checks for libraries.
 
 # Checks for header files.

@@ -18,6 +18,7 @@
 #ifndef MCC_DATASOURCE_H
 #define MCC_DATASOURCE_H
 
+#include "../config.h"
 #include <glib-object.h>
 #include <gdk/gdkcolor.h>
 #include "mccvalue.h"

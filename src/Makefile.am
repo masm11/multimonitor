@@ -24,7 +24,9 @@ multi_monitor_SOURCES = \
     mccsrcmemory.c	\
     mccsrcmemory.h	\
     battalert.c		\
-    battalert.h
+    battalert.h		\
+    opendirat.c		\
+    opendirat.h
 
 AM_CPPFLAGS = $(GTK_CFLAGS)
 # -DLOCALEDIR=\"$(localedir)\"

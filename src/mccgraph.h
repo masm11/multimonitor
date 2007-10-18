@@ -18,6 +18,7 @@
 #ifndef MCC_GRAPH_H
 #define MCC_GRAPH_H
 
+#include "../config.h"
 #include <gtk/gtkmisc.h>
 #include "mccvalue.h"
 

@@ -18,6 +18,7 @@
 #ifndef MCC_SRC_BATTERY_H
 #define MCC_SRC_BATTERY_H
 
+#include "../config.h"
 #include <glib-object.h>
 #include "mccdatasource.h"
 

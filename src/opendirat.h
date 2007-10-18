@@ -15,14 +15,12 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef BATTALERT_H__INCLUDED
-#define BATTALERT_H__INCLUDED
+#ifndef OPENDIRAT_H__INCLUDED
+#define OPENDIRAT_H__INCLUDED
 
 #include "../config.h"
-#include <glib.h>
+#include <dirent.h>
 
-void battalert_init(void);
-void battalert_alert(gint ratio);
-void battalert_clear(void);
+DIR *opendirat(int dirfd, const char *name);
 
-#endif	/* ifndef BATTALERT_H__INCLUDED */
+#endif	/* ifndef OPENDIRAT_H__INCLUDED */

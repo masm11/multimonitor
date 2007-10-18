@@ -15,14 +15,18 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef BATTALERT_H__INCLUDED
-#define BATTALERT_H__INCLUDED
-
 #include "../config.h"
-#include <glib.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include "opendirat.h"
 
-void battalert_init(void);
-void battalert_alert(gint ratio);
-void battalert_clear(void);
-
-#endif	/* ifndef BATTALERT_H__INCLUDED */
+DIR *opendirat(int dirfd, const char *name)
+{
+    int fd;
+    
+    if ((fd = openat(dirfd, name, O_RDONLY | O_DIRECTORY)) == -1)
+	return NULL;
+    
+    return fdopendir(fd);
+}
