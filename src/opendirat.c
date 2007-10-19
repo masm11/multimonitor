@@ -43,10 +43,10 @@ FILE *fopenat(int dirfd, const char *name)
 
 int open_dir(const char *name)
 {
-    return open(name, O_RDONLY);
+    return open(name, O_RDONLY | O_DIRECTORY);
 }
 
-int open_dir_at(int dirfd, const char *name)
+int openat_dir(int dirfd, const char *name)
 {
-    return openat(dirfd, name, O_RDONLY);
+    return openat(dirfd, name, O_RDONLY | O_DIRECTORY);
 }

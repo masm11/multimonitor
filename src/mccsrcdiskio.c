@@ -109,7 +109,7 @@ static void disk_io_read_data(gint64 *ptr, gint sysfd)
 	
 	const gchar *name = dp->d_name;
 	
-	gint fd = open_dir_at(dirfd(dir), name);
+	gint fd = openat_dir(dirfd(dir), name);
 	if (fd == -1)
 	    continue;
 	
