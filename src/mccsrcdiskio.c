@@ -18,11 +18,13 @@
 #include "../config.h"
 #include <string.h>
 #include <unistd.h>
+#include <dirent.h>
+#include "opendirat.h"
 #include "mccsrcdiskio.h"
 
 #define NR_DATA 2
 
-static void disk_io_read_data(gint64 *ptr);
+static void disk_io_read_data(gint64 *ptr, gint dirfd);
 
 static void mcc_src_disk_io_class_init(gpointer klass, gpointer class_data);
 static void mcc_src_disk_io_set_subidx(MccDataSource *datasrc);
@@ -81,7 +83,7 @@ static void mcc_src_disk_io_class_init(gpointer klass, gpointer class_data)
     datasrc_class->sublabels = g_new0(gchar *, 2);
     datasrc_class->sublabels[0] = g_strdup("Total");
     
-    disk_io_read_data(src_class->newdata);
+    disk_io_read_data(src_class->newdata, datasrc_class->sys_dirfd);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * NR_DATA);
 }
 
@@ -90,34 +92,38 @@ static void mcc_src_disk_io_read(MccDataSourceClass *datasrc_class)
     MccSrcDiskIOClass *src_class = MCC_SRC_DISK_IO_CLASS(datasrc_class);
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * NR_DATA);
-    disk_io_read_data(src_class->newdata);
+    disk_io_read_data(src_class->newdata, datasrc_class->sys_dirfd);
 }
 
-static void disk_io_read_data(gint64 *ptr)
+static void disk_io_read_data(gint64 *ptr, gint sysfd)
 {
-    GDir *dir;
-    
-    if ((dir = g_dir_open("/sys/block", 0, NULL)) == NULL)
+    DIR *dir = opendirat(sysfd, "block");
+    if (dir == NULL)
 	return;
     
     gint64 totalrd = 0, totalwr = 0;
     while (TRUE) {
-	const gchar *name = g_dir_read_name(dir);
-	char path[1024];
-	
-	if (name == NULL)
+	struct dirent *dp = readdir(dir);
+	if (dp == NULL)
 	    break;
-	sprintf(path, "/sys/block/%s/device", name);
 	
-	if (access(path, F_OK) == -1)
+	const gchar *name = dp->d_name;
+	
+	gint fd = open_dir_at(dirfd(dir), name);
+	if (fd == -1)
 	    continue;
 	
-	sprintf(path, "/sys/block/%s/stat", name);
+	if (faccessat(fd, "device", F_OK, 0) == -1) {
+	    close(fd);
+	    continue;
+	}
 	
 	FILE *fp;
 	
-	if ((fp = fopen(path, "rt")) == NULL)
+	if ((fp = fopenat(fd, "stat")) == NULL) {
+	    close(fd);
 	    continue;
+	}
 	
 	gint64 rd, wr;
 	if (fscanf(fp, "%*u %*u %" G_GINT64_FORMAT " %*u %*u %*u %" G_GINT64_FORMAT " %*u %*u %*u %*u", &rd, &wr) == 2) {
@@ -126,12 +132,13 @@ static void disk_io_read_data(gint64 *ptr)
 	}
 	
 	fclose(fp);
+	close(fd);
     }
-    
-    g_dir_close(dir);
     
     ptr[0] = totalrd * 512;
     ptr[1] = totalwr * 512;
+    
+    closedir(dir);
 }
 
 static void mcc_src_disk_io_init(GTypeInstance *obj, gpointer klass)

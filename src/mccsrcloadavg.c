@@ -17,9 +17,10 @@
 
 #include "../config.h"
 #include <string.h>
+#include "opendirat.h"
 #include "mccsrcloadavg.h"
 
-static void loadavg_read_data(gdouble *ptr);
+static void loadavg_read_data(gdouble *ptr, gint dirfd);
 
 static void mcc_src_load_avg_class_init(gpointer klass, gpointer class_data);
 static void mcc_src_load_avg_set_subidx(MccDataSource *datasrc);
@@ -80,7 +81,7 @@ static void mcc_src_load_avg_class_init(gpointer klass, gpointer class_data)
     src_class->olddata = g_new0(gdouble, 3);
     src_class->newdata = g_new0(gdouble, 3);
     
-    loadavg_read_data(src_class->newdata);
+    loadavg_read_data(src_class->newdata, datasrc_class->proc_dirfd);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * 3);
 }
 
@@ -89,14 +90,14 @@ static void mcc_src_load_avg_read(MccDataSourceClass *datasrc_class)
     MccSrcLoadAvgClass *src_class = MCC_SRC_LOAD_AVG_CLASS(datasrc_class);
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * 3);
-    loadavg_read_data(src_class->newdata);
+    loadavg_read_data(src_class->newdata, datasrc_class->proc_dirfd);
 }
 
-static void loadavg_read_data(gdouble *ptr)
+static void loadavg_read_data(gdouble *ptr, gint dirfd)
 {
     FILE *fp;
     
-    if ((fp = fopen("/proc/loadavg", "rt")) == NULL)
+    if ((fp = fopenat(dirfd, "loadavg")) == NULL)
 	return;
     
     if (fscanf(fp, "%lf %lf %lf", &ptr[0], &ptr[1], &ptr[2]) != 3)

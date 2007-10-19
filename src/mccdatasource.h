@@ -67,6 +67,8 @@ struct _MccDataSourceClass {
     gint tick_for_read;
     gboolean has_new_data;
     
+    gint proc_dirfd, sys_dirfd;
+    
     void (*read)(MccDataSourceClass *datasrc_class);
     void (*set_subidx)(MccDataSource *src);
     MccValue *(*get)(MccDataSource *src);

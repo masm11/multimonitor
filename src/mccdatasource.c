@@ -16,6 +16,7 @@
  */
 
 #include "../config.h"
+#include "opendirat.h"
 #include "mccdatasource.h"
 
 enum {
@@ -50,6 +51,12 @@ static void mcc_data_source_class_init(MccDataSourceClass *klass)
 		    "Sub index",
 		    0, 1024, 0,
 		    G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+    
+    /* class の継承では、メンバはそのままコピーされる。
+     * したがって、これらは何度も open されることはない。
+     */
+    klass->proc_dirfd = open_dir("/proc");
+    klass->sys_dirfd = open_dir("/sys");
 }
 
 static void mcc_data_source_set_property(

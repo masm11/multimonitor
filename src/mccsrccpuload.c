@@ -17,10 +17,11 @@
 
 #include "../config.h"
 #include <string.h>
+#include "opendirat.h"
 #include "mccsrccpuload.h"
 
-static gint cpuload_count_cpus(void);
-static void cpuload_read_data(data_per_cpu *ptr, gint nr);
+static gint cpuload_count_cpus(gint dirfd);
+static void cpuload_read_data(data_per_cpu *ptr, gint nr, gint dirfd);
 
 static void mcc_src_cpu_load_class_init(gpointer klass, gpointer class_data);
 static void mcc_src_cpu_load_set_subidx(MccDataSource *datasrc);
@@ -73,7 +74,7 @@ static void mcc_src_cpu_load_class_init(gpointer klass, gpointer class_data)
     datasrc_class->read = mcc_src_cpu_load_read;
     datasrc_class->get = mcc_src_cpu_load_get;
     
-    src_class->ncpu = cpuload_count_cpus();
+    src_class->ncpu = cpuload_count_cpus(datasrc_class->proc_dirfd);
     src_class->olddata = g_new0(data_per_cpu, src_class->ncpu + 1);
     src_class->newdata = g_new0(data_per_cpu, src_class->ncpu + 1);
     
@@ -82,7 +83,7 @@ static void mcc_src_cpu_load_class_init(gpointer klass, gpointer class_data)
     for (gint i = 0; i < src_class->ncpu; i++)
 	datasrc_class->sublabels[i + 1] = g_strdup_printf("CPU %d", i);
     
-    cpuload_read_data(src_class->newdata, src_class->ncpu + 1);
+    cpuload_read_data(src_class->newdata, src_class->ncpu + 1, datasrc_class->proc_dirfd);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * (src_class->ncpu + 1));
 }
 
@@ -91,14 +92,14 @@ static void mcc_src_cpu_load_read(MccDataSourceClass *datasrc_class)
     MccSrcCpuLoadClass *src_class = MCC_SRC_CPU_LOAD_CLASS(datasrc_class);
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * (src_class->ncpu + 1));
-    cpuload_read_data(src_class->newdata, src_class->ncpu + 1);
+    cpuload_read_data(src_class->newdata, src_class->ncpu + 1, datasrc_class->proc_dirfd);
 }
 
-static gint cpuload_count_cpus(void)
+static gint cpuload_count_cpus(gint dirfd)
 {
     FILE *fp;
     
-    if ((fp = fopen("/proc/stat", "rt")) == NULL)
+    if ((fp = fopenat(dirfd, "stat")) == NULL)
 	return 0;
     
     gint n;
@@ -116,11 +117,11 @@ static gint cpuload_count_cpus(void)
     return n < 2 ? 0 : n - 1;
 }
 
-static void cpuload_read_data(data_per_cpu *ptr, gint nr)
+static void cpuload_read_data(data_per_cpu *ptr, gint nr, gint dirfd)
 {
     FILE *fp;
     
-    if ((fp = fopen("/proc/stat", "rt")) == NULL)
+    if ((fp = fopenat(dirfd, "stat")) == NULL)
 	return;
     
     int i;

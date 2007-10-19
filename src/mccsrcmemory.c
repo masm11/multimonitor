@@ -17,11 +17,12 @@
 
 #include "../config.h"
 #include <string.h>
+#include "opendirat.h"
 #include "mccsrcmemory.h"
 
 #define NR_DATA 4
 
-static void memory_read_data(gint64 *ptr);
+static void memory_read_data(gint64 *ptr, gint dirfd);
 
 static void mcc_src_memory_class_init(gpointer klass, gpointer class_data);
 static void mcc_src_memory_set_subidx(MccDataSource *datasrc);
@@ -80,7 +81,7 @@ static void mcc_src_memory_class_init(gpointer klass, gpointer class_data)
     datasrc_class->sublabels = g_new0(gchar *, 2);
     datasrc_class->sublabels[0] = g_strdup("Usage");
     
-    memory_read_data(src_class->newdata);
+    memory_read_data(src_class->newdata, datasrc_class->proc_dirfd);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * NR_DATA);
     src_class->max = src_class->newdata[0];
 }
@@ -90,17 +91,17 @@ static void mcc_src_memory_read(MccDataSourceClass *datasrc_class)
     MccSrcMemoryClass *src_class = MCC_SRC_MEMORY_CLASS(datasrc_class);
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * NR_DATA);
-    memory_read_data(src_class->newdata);
+    memory_read_data(src_class->newdata, datasrc_class->proc_dirfd);
 }
 
-static void memory_read_data(gint64 *ptr)
+static void memory_read_data(gint64 *ptr, gint dirfd)
 {
     FILE *fp;
     gint64 total = -1, free = -1, buff = -1, cache = -1;
     
     ptr[0] = ptr[1] = ptr[2] = ptr[3] = 0;
     
-    if ((fp = fopen("/proc/meminfo", "rt")) == NULL)
+    if ((fp = fopenat(dirfd, "meminfo")) == NULL)
 	return;
     
     while (TRUE) {
