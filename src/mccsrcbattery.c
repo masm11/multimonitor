@@ -17,11 +17,13 @@
 
 #include "../config.h"
 #include <string.h>
+#include "opendirat.h"
 #include "battalert.h"
 #include "mccsrcbattery.h"
 
-static gint32 battery_read_last_full_capacity(void);
-static void battery_read_data(data_per_batt *ptr, gint32 last_full_capacity);
+static gint battery_read_config(gint *acdirfd, gint32 **fulls, gint **dirfds);
+static void battery_read_data(data_per_batt *ptr, gint acdirfd,
+	gint nbatt, gint32 *last_full_capacities, gint *dirfds);
 
 static void mcc_src_battery_class_init(gpointer klass, gpointer class_data);
 static void mcc_src_battery_set_subidx(MccDataSource *datasrc);
@@ -77,14 +79,16 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     datasrc_class->read = mcc_src_battery_read;
     datasrc_class->get = mcc_src_battery_get;
     
-    src_class->nbatt = 1;
+    src_class->nbatt = battery_read_config(
+	    &src_class->acdirfd, &src_class->last_full_capacities, &src_class->dirfds);
+    
     src_class->olddata = g_new0(data_per_batt, src_class->nbatt);
     src_class->newdata = g_new0(data_per_batt, src_class->nbatt);
-    src_class->last_full_capacity = battery_read_last_full_capacity();
     
     battalert_init();
     
-    battery_read_data(src_class->newdata, src_class->last_full_capacity);
+    battery_read_data(src_class->newdata, src_class->acdirfd,
+	    src_class->nbatt, src_class->last_full_capacities, src_class->dirfds);
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * src_class->nbatt);
 }
 
@@ -93,72 +97,101 @@ static void mcc_src_battery_read(MccDataSourceClass *datasrc_class)
     MccSrcBatteryClass *src_class = MCC_SRC_BATTERY_CLASS(datasrc_class);
     
     memcpy(src_class->olddata, src_class->newdata, sizeof *src_class->olddata * src_class->nbatt);
-    battery_read_data(src_class->newdata, src_class->last_full_capacity);
+    battery_read_data(src_class->newdata, src_class->acdirfd,
+	    src_class->nbatt, src_class->last_full_capacities, src_class->dirfds);
     
-    gint ratio = src_class->newdata[0].ratio * 100;
-    if (src_class->newdata[0].ac)
-	battalert_clear();
-    else
-	battalert_alert(ratio);
+    if (src_class->nbatt >= 1) {
+	gint ratio = src_class->newdata[0].ratio * 100;
+	if (src_class->newdata[0].ac)
+	    battalert_clear();
+	else
+	    battalert_alert(ratio);
+    }
 }
 
-static gint32 battery_read_last_full_capacity(void)
+static gint battery_read_config(gint *acdirfd, gint32 **fulls, gint **dirfds)
 {
-    FILE *fp;
-    gint32 full = 0;
-    char buf[1024];
+    *acdirfd = open_dir("/proc/acpi/ac_adapter/AC/");
     
-    if ((fp = fopen("/proc/acpi/battery/BAT0/info", "rt")) != NULL) {
+    gint num = 0;
+    
+    *fulls = g_new0(gint32, 1);
+    *dirfds = g_new0(gint, 1);
+    
+    while (TRUE) {
+	FILE *fp;
+	char buf[1024];
+	
+	sprintf(buf, "/proc/acpi/battery/BAT%d/", num);
+	gint dirfd;
+	if ((dirfd = open_dir(buf)) == -1)
+	    break;
+	
+	gint32 full = 0;
+	if ((fp = fopenat(dirfd, "info")) == NULL)
+	    break;
 	while (fgets(buf, sizeof buf, fp) != NULL) {
 	    gint32 n;
 	    if (sscanf(buf, "last full capacity: %" G_GINT32_FORMAT " mWh", &n) == 1)
 		full = n;
 	}
-	
 	fclose(fp);
+	
+	if (full == 0)
+	    break;
+	
+	*fulls = g_renew(gint32, *fulls, num + 1);
+	*dirfds = g_renew(gint32, *dirfds, num + 1);
+	(*fulls)[num] = full;
+	(*dirfds)[num] = dirfd;
+	num++;
     }
     
-    return full;
+    return num;
 }
 
-static void battery_read_data(data_per_batt *ptr, gint32 last_full_capacity)
+static void battery_read_data(data_per_batt *ptr, gint acdirfd,
+	gint nbatt, gint32 *last_full_capacities, gint *dirfds)
 {
     char buf[1024];
     FILE *fp;
     
-    ptr->ac = FALSE;
-    ptr->charging = FALSE;
-    ptr->ratio = 0.0;
-    
-    if ((fp = fopen("/proc/acpi/ac_adapter/AC/state", "rt")) != NULL) {
+    gboolean ac = FALSE;
+    if ((fp = fopenat(acdirfd, "state")) != NULL) {
 	while (fgets(buf, sizeof buf, fp) != NULL) {
 	    if (strncmp(buf, "state:", 6) == 0) {
 		if (strstr(buf, "on-line") != NULL)
-		    ptr->ac = TRUE;
+		    ac = TRUE;
 	    }
 	}
 	
 	fclose(fp);
     }
     
-    gint32 cur = 0;
-    
-    if ((fp = fopen("/proc/acpi/battery/BAT0/state", "rt")) != NULL) {
-	while (fgets(buf, sizeof buf, fp) != NULL) {
-	    gint32 n;
-	    char bf[32];
-	    if (sscanf(buf, "remaining capacity: %" G_GINT32_FORMAT " mWh", &n) == 1)
-		cur = n;
-	    else if (sscanf(buf, "charging state: %s", bf) == 1 && strcmp(bf, "charging") == 0) {
-		ptr->charging = TRUE;
+    for (gint batt = 0; batt < nbatt; batt++) {
+	gint32 cur = 0;
+	
+	ptr[batt].ac = ac;
+	ptr[batt].charging = FALSE;
+	ptr[batt].ratio = 0.0;
+	
+	if ((fp = fopenat(dirfds[batt], "state")) != NULL) {
+	    while (fgets(buf, sizeof buf, fp) != NULL) {
+		gint32 n;
+		char bf[32];
+		if (sscanf(buf, "remaining capacity: %" G_GINT32_FORMAT " mWh", &n) == 1)
+		    cur = n;
+		else if (sscanf(buf, "charging state: %s", bf) == 1 && strcmp(bf, "charging") == 0) {
+		    ptr[batt].charging = TRUE;
+		}
 	    }
+	    
+	    fclose(fp);
 	}
 	
-	fclose(fp);
+	if (last_full_capacities[batt] > 0)
+	    ptr[batt].ratio = (gdouble) cur / last_full_capacities[batt];
     }
-    
-    if (last_full_capacity > 0)
-	ptr->ratio = (gdouble) cur / last_full_capacity;
 }
 
 static void mcc_src_battery_init(GTypeInstance *obj, gpointer klass)

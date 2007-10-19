@@ -24,5 +24,6 @@
 
 DIR *opendirat(int dirfd, const char *name);
 FILE *fopenat(int dirfd, const char *name);
+int open_dir(const char *name);
 
 #endif	/* ifndef OPENDIRAT_H__INCLUDED */

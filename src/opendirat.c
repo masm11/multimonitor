@@ -40,3 +40,8 @@ FILE *fopenat(int dirfd, const char *name)
     
     return fdopen(fd, "rt");
 }
+
+int open_dir(const char *name)
+{
+    return open(name, O_RDONLY);
+}

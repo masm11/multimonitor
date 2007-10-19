@@ -49,7 +49,9 @@ struct _MccSrcBatteryClass {
     
     gint nbatt;
     data_per_batt *olddata, *newdata;
-    gint32 last_full_capacity;
+    gint32 *last_full_capacities;
+    gint *dirfds;
+    gint acdirfd;
 };
 
 GType mcc_src_battery_get_type(void) G_GNUC_CONST;
