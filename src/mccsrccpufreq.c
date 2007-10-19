@@ -17,7 +17,6 @@
 
 #include "../config.h"
 #include <string.h>
-#include <fcntl.h>
 #include "opendirat.h"
 #include "mccsrccpufreq.h"
 
@@ -107,7 +106,7 @@ static void cpufreq_get_conf(gint **dirfds, gint *ncpus, gint64 *maxfreq)
 	
 	gint dirfd;
 	sprintf(buf, "/sys/devices/system/cpu/cpu%d/cpufreq/", n);
-	if ((dirfd = open(buf, O_RDONLY)) == -1)
+	if ((dirfd = open_dir(buf)) == -1)
 	    break;
 	
 	FILE *fp;
