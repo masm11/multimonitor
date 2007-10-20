@@ -72,8 +72,6 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     gobject_class->finalize = mcc_src_battery_finalize;
     
     datasrc_class->label = g_strdup("Battery");
-    datasrc_class->sublabels = g_new0(gchar *, 2);
-    datasrc_class->sublabels[0] = g_strdup("Battery");
     datasrc_class->tick_per_read = 20;
     datasrc_class->set_subidx = mcc_src_battery_set_subidx;
     datasrc_class->read = mcc_src_battery_read;
@@ -81,6 +79,10 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     
     src_class->nbatt = battery_read_config(
 	    &src_class->acdirfd, &src_class->last_full_capacities, &src_class->dirfds);
+    
+    datasrc_class->sublabels = g_new0(gchar *, src_class->nbatt + 1);
+    for (gint i = 0; i < src_class->nbatt; i++)
+	datasrc_class->sublabels[i] = g_strdup_printf("BAT %d", i);
     
     src_class->olddata = g_new0(data_per_batt, src_class->nbatt);
     src_class->newdata = g_new0(data_per_batt, src_class->nbatt);
@@ -244,9 +246,9 @@ static MccValue *mcc_src_battery_get(MccDataSource *datasrc)
     MccSrcBatteryClass *src_class = MCC_SRC_BATTERY_GET_CLASS(src);
     
     MccValue *value = mcc_value_new(1);
-    mcc_value_set_value(value, 0, src_class->newdata->ratio);
-    mcc_value_set_foreground(value, 0, src_class->newdata->charging ? 1 : 0);
-    mcc_value_set_background(value, src_class->newdata->ac ? 1 : 0);
+    mcc_value_set_value(value, 0, src_class->newdata[src->data_source.subidx].ratio);
+    mcc_value_set_foreground(value, 0, src_class->newdata[src->data_source.subidx].charging ? 1 : 0);
+    mcc_value_set_background(value, src_class->newdata[src->data_source.subidx].ac ? 1 : 0);
     
     return value;
 }
