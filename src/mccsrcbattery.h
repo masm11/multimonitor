@@ -52,6 +52,7 @@ struct _MccSrcBatteryClass {
     gint32 *last_full_capacities;
     gint *dirfds;
     gint acdirfd;
+    struct battalert_t **battalert;
 };
 
 GType mcc_src_battery_get_type(void) G_GNUC_CONST;

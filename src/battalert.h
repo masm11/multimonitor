@@ -21,8 +21,10 @@
 #include "../config.h"
 #include <glib.h>
 
-void battalert_init(void);
-void battalert_alert(gint ratio);
-void battalert_clear(void);
+struct battalert_t;
+
+struct battalert_t *battalert_new(void);
+void battalert_alert(struct battalert_t *w, gint ratio);
+void battalert_clear(struct battalert_t *w);
 
 #endif	/* ifndef BATTALERT_H__INCLUDED */

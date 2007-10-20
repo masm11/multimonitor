@@ -87,7 +87,9 @@ static void mcc_src_battery_class_init(gpointer klass, gpointer class_data)
     src_class->olddata = g_new0(data_per_batt, src_class->nbatt);
     src_class->newdata = g_new0(data_per_batt, src_class->nbatt);
     
-    battalert_init();
+    src_class->battalert = g_new0(struct battalert_t *, src_class->nbatt);
+    for (gint i = 0; i < src_class->nbatt; i++)
+	src_class->battalert[i] = battalert_new();
     
     battery_read_data(src_class->newdata, src_class->acdirfd,
 	    src_class->nbatt, src_class->last_full_capacities, src_class->dirfds);
@@ -102,12 +104,12 @@ static void mcc_src_battery_read(MccDataSourceClass *datasrc_class)
     battery_read_data(src_class->newdata, src_class->acdirfd,
 	    src_class->nbatt, src_class->last_full_capacities, src_class->dirfds);
     
-    if (src_class->nbatt >= 1) {
-	gint ratio = src_class->newdata[0].ratio * 100;
-	if (src_class->newdata[0].ac)
-	    battalert_clear();
+    for (gint i = 0; i < src_class->nbatt; i++) {
+	gint ratio = src_class->newdata[i].ratio * 100;
+	if (src_class->newdata[i].ac)
+	    battalert_clear(src_class->battalert[i]);
 	else
-	    battalert_alert(ratio);
+	    battalert_alert(src_class->battalert[i], ratio);
     }
 }
 

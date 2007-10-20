@@ -42,30 +42,31 @@ enum {
     STEP_LEVEL2,
 };
 
-static struct {
+struct battalert_t {
     GtkWidget *dialog;
     gint step;
     gint prev_ratio;
-} work;
+};
 
-void battalert_init(void)
+struct battalert_t *battalert_new(void)
 {
-    memset(&work, 0, sizeof work);
+    struct battalert_t *w = g_new0(struct battalert_t, 1);
+    return w;
 }
 
-static void update_dialog(gint ratio)
+static void update_dialog(struct battalert_t *w, gint ratio)
 {
-    if (work.prev_ratio != ratio) {
+    if (w->prev_ratio != ratio && w->dialog != NULL) {
 	gchar *msg;
 	
 	msg = g_markup_printf_escaped("Battery level is %s.", (ratio <= CRITICAL_LEVEL ? "critical" : "low"));
-	gtk_message_dialog_set_markup(GTK_MESSAGE_DIALOG(work.dialog), msg);
+	gtk_message_dialog_set_markup(GTK_MESSAGE_DIALOG(w->dialog), msg);
 	
 	if (ratio <= CRITICAL_LEVEL) {
-	    gtk_message_dialog_format_secondary_markup(GTK_MESSAGE_DIALOG(work.dialog),
+	    gtk_message_dialog_format_secondary_markup(GTK_MESSAGE_DIALOG(w->dialog),
 		    "<span size='xx-large' weight='heavy' foreground='red'>%d%%</span>", ratio);
 	} else {
-	    gtk_message_dialog_format_secondary_markup(GTK_MESSAGE_DIALOG(work.dialog),
+	    gtk_message_dialog_format_secondary_markup(GTK_MESSAGE_DIALOG(w->dialog),
 		    "<span size='xx-large' weight='heavy'>%d%%</span>", ratio);
 	}
 	
@@ -73,68 +74,68 @@ static void update_dialog(gint ratio)
     }
 }
 
-static void clicked(void)
+static void clicked(GtkDialog *dialog, gint arg, gpointer userdata)
 {
-    if (work.step == STEP_LEVEL1)
-	work.step = STEP_CLOSE;
-    gtk_widget_destroy(work.dialog);
-    work.dialog = NULL;
+    struct battalert_t *w = userdata;
+    if (w->step == STEP_LEVEL1)
+	w->step = STEP_CLOSE;
+    gtk_widget_destroy(w->dialog);
+    w->dialog = NULL;
 }
 
-static void create_dialog(gint ratio)
+static void create_dialog(struct battalert_t *w, gint ratio)
 {
-    work.dialog = gtk_message_dialog_new(
+    w->dialog = gtk_message_dialog_new(
 	    NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
 	    NULL);
-    g_signal_connect_swapped(work.dialog, "response",
-	    G_CALLBACK(clicked), work.dialog);
+    g_signal_connect(w->dialog, "response", G_CALLBACK(clicked), w);
     
-    work.prev_ratio = -1;
-    update_dialog(ratio);
+    w->prev_ratio = -1;
+    update_dialog(w, ratio);
     
-    gtk_widget_show_all(work.dialog);
+    gtk_widget_show_all(w->dialog);
 }
 
-void battalert_alert(gint ratio)
+void battalert_alert(struct battalert_t *w, gint ratio)
 {
-    switch (work.step) {
+    switch (w->step) {
     case STEP_NORMAL:
 	if (ratio <= CRITICAL_LEVEL) {
-	    work.step = STEP_LEVEL2;
-	    create_dialog(ratio);
+	    w->step = STEP_LEVEL2;
+	    create_dialog(w, ratio);
 	} else if (ratio <= LOW_LEVEL) {
-	    work.step = STEP_LEVEL1;
-	    create_dialog(ratio);
+	    w->step = STEP_LEVEL1;
+	    create_dialog(w, ratio);
 	}
 	break;
 	
     case STEP_LEVEL1:
 	if (ratio <= CRITICAL_LEVEL) {
-	    work.step = STEP_LEVEL2;
-	    update_dialog(ratio);
+	    w->step = STEP_LEVEL2;
+	    update_dialog(w, ratio);
 	} else {
-	    update_dialog(ratio);
+	    update_dialog(w, ratio);
 	}
 	break;
 	
     case STEP_CLOSE:
 	if (ratio <= CRITICAL_LEVEL) {
-	    work.step = STEP_LEVEL2;
-	    create_dialog(ratio);
+	    w->step = STEP_LEVEL2;
+	    create_dialog(w, ratio);
 	}
 	break;
 	
     case STEP_LEVEL2:
-	update_dialog(ratio);
+	update_dialog(w, ratio);
 	break;
     }
 }
 
-void battalert_clear(void)
+void battalert_clear(struct battalert_t *w)
 {
-    if (work.dialog != NULL) {
-	gtk_widget_destroy(work.dialog);
-	work.dialog = NULL;
+    if (w->dialog != NULL) {
+	gtk_widget_destroy(w->dialog);
+	w->dialog = NULL;
     }
-    work.step = STEP_NORMAL;
+    w->step = STEP_NORMAL;
 }
