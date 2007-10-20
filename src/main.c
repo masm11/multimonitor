@@ -29,6 +29,7 @@
 #include "mccsrcmemory.h"
 #include "mccsrcdiskio.h"
 #include "preferences.h"
+#include "about.h"
 #include "main.h"
 
 static GType *datasrc_types;
@@ -314,12 +315,11 @@ static void plugin_start(XfcePanelPlugin *plg)
     g_signal_connect(plugin, "size-changed", G_CALLBACK(change_size_cb), NULL);
     g_signal_connect(plugin, "orientation-changed", G_CALLBACK(change_orient_cb), NULL);
     g_signal_connect(plugin, "save", G_CALLBACK(save_config_cb), NULL);
+    g_signal_connect(plugin, "about", G_CALLBACK(about), NULL);
 #if 0
     g_signal_connect(plugin, "free-data", G_CALLBACK(destroy_cb), app);
-    g_signal_connect(plugin, "about", G_CALLBACK(about), app);
-    
-    xfce_panel_plugin_menu_show_about(plugin);
 #endif
+    xfce_panel_plugin_menu_show_about(plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
     
     ev = gtk_event_box_new();

@@ -3,6 +3,8 @@ pkglibexec_PROGRAMS = multi-monitor
 multi_monitor_SOURCES = \
     main.c		\
     main.h		\
+    about.c		\
+    about.h		\
     preferences.c	\
     preferences.h	\
     mccgraph.c		\
