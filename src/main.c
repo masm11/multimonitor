@@ -37,6 +37,7 @@ static GType *datasrc_types;
 static XfcePanelPlugin *plugin;
 static GtkWidget *ev;
 static GtkWidget *box;
+static GtkTooltips *tooltips;
 
 static gboolean timer(gpointer data)
 {
@@ -51,6 +52,10 @@ static gboolean timer(gpointer data)
 	if (src->add_on_tick || mcc_data_source_has_new_data(src)) {
 	    MccValue *value = mcc_data_source_get(src);
 	    mcc_graph_add(graph, value);
+	    
+	    const gchar *tips = mcc_value_get_tips(value);
+	    gtk_tooltips_set_tip(tooltips, GTK_WIDGET(graph), tips[0] != '\0' ? tips : NULL, NULL);
+	    
 	    mcc_value_unref(value);
 	}
 	
@@ -67,6 +72,7 @@ GtkWidget *add_graph(GType type, gint subidx)
 	    src->nfg, src->default_fg, src->nbg, src->default_bg, src->dynamic_scaling,
 	    MCC_DATA_SOURCE_GET_CLASS(src)->label, src->sublabel);
     g_object_set_data_full(G_OBJECT(g), "mcc-datasrc", src, g_object_unref);
+    gtk_widget_add_events(g, GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK);
     
     int width, height;
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
@@ -321,6 +327,8 @@ static void plugin_start(XfcePanelPlugin *plg)
 #endif
     xfce_panel_plugin_menu_show_about(plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
+    
+    tooltips = gtk_tooltips_new();
     
     ev = gtk_event_box_new();
     gtk_widget_show(ev);

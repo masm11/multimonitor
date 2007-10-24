@@ -190,6 +190,25 @@ static MccValue *mcc_src_cpu_freq_get(MccDataSource *datasrc)
     MccSrcCpuFreq *src = MCC_SRC_CPU_FREQ(datasrc);
     MccSrcCpuFreqClass *src_class = MCC_SRC_CPU_FREQ_GET_CLASS(src);
     MccValue *value = mcc_value_new(1);
-    mcc_value_set_value(value, 0, src_class->newdata[src->data_source.subidx]);
+    gint64 freq = src_class->newdata[src->data_source.subidx];
+    mcc_value_set_value(value, 0, freq);
+    mcc_value_append_tips_printf(value, "%s - %s\n",
+	    datasrc->sublabel, src_class->parent_class.label);
+    const gchar *unit = "";
+    gint64 geta = 1;
+    if (freq < 1000) {
+	geta = 1;
+	unit = "";
+    } else if (freq < 1000000) {
+	geta = 1000;
+	unit = "k";
+    } else if (freq < 1000000000) {
+	geta = 1000000;
+	unit = "M";
+    } else {
+	geta = 1000000000;
+	unit = "G";
+    }
+    mcc_value_append_tips_printf(value, "%g%sHz", (gdouble) freq / geta, unit);
     return value;
 }

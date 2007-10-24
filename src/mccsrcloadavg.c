@@ -150,6 +150,9 @@ static MccValue *mcc_src_load_avg_get(MccDataSource *datasrc)
     
     MccValue *value = mcc_value_new(1);
     mcc_value_set_value(value, 0, src_class->newdata[datasrc->subidx]);
+    mcc_value_append_tips_printf(value, "%s - %s\n%g",
+	    datasrc->sublabel, src_class->parent_class.label,
+	    src_class->newdata[datasrc->subidx]);
     
     return value;
 }

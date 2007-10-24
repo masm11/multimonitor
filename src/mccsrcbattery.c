@@ -251,6 +251,9 @@ static MccValue *mcc_src_battery_get(MccDataSource *datasrc)
     mcc_value_set_value(value, 0, src_class->newdata[src->data_source.subidx].ratio);
     mcc_value_set_foreground(value, 0, src_class->newdata[src->data_source.subidx].charging ? 1 : 0);
     mcc_value_set_background(value, src_class->newdata[src->data_source.subidx].ac ? 1 : 0);
+    mcc_value_append_tips_printf(value, "%s - %s\n%d%%",
+	    datasrc->sublabel, src_class->parent_class.label,
+	    (gint) (src_class->newdata[src->data_source.subidx].ratio * 100));
     
     return value;
 }

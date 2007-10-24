@@ -229,6 +229,15 @@ static MccValue *mcc_src_cpu_load_get(MccDataSource *datasrc)
 	mcc_value_set_value(value, i, vals[i]);
 	mcc_value_set_foreground(value, i, i);
     }
+    mcc_value_append_tips_printf(value, "%s - %s",
+	    datasrc->sublabel, src_class->parent_class.label);
+    mcc_value_append_tips_printf(value, "\nuser %d%%", (gint) (vals[0] * 100));
+    mcc_value_append_tips_printf(value, "\nnice %d%%", (gint) (vals[1] * 100));
+    mcc_value_append_tips_printf(value, "\nsys %d%%", (gint) (vals[2] * 100));
+    mcc_value_append_tips_printf(value, "\niowait %d%%", (gint) (vals[3] * 100));
+    mcc_value_append_tips_printf(value, "\nirq %d%%", (gint) (vals[4] * 100));
+    mcc_value_append_tips_printf(value, "\nsoftirq %d%%", (gint) (vals[5] * 100));
+    mcc_value_append_tips_printf(value, "\nsteal %d%%", (gint) (vals[6] * 100));
     
     return value;
 }

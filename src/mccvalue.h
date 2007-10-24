@@ -49,6 +49,8 @@ void mcc_value_set_foreground(MccValue *value, gint idx, gint col);
 gint mcc_value_get_foreground(MccValue *value, gint idx);
 void mcc_value_set_background(MccValue *value, gint col);
 gint mcc_value_get_background(MccValue *value);
+const gchar *mcc_value_get_tips(MccValue *value);
+void mcc_value_append_tips_printf(MccValue *value, const gchar *fmt, ...);
 
 MccValue *mcc_value_new(gint nvalues);
 void mcc_value_ref(MccValue *value);

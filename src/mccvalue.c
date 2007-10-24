@@ -16,13 +16,18 @@
  */
 
 #include "../config.h"
+#include <stdio.h>
+#include <string.h>
 #include "mccvalue.h"
+
+#define TIPS_MAXSIZ	256
 
 typedef struct _MccValuePrivate {
     gint nvalues;
     gdouble *values;
     gint *fgs;
     gint bg;
+    gchar *tips;
 } MccValuePrivate;
 
 G_DEFINE_TYPE(MccValue, mcc_value, G_TYPE_OBJECT)
@@ -49,6 +54,7 @@ static void mcc_value_init(MccValue *self)
     
     priv->values = NULL;
     priv->fgs = NULL;
+    priv->tips = g_new0(gchar, TIPS_MAXSIZ);
 }
 
 static void mcc_value_finalize(GObject *object)
@@ -108,6 +114,27 @@ gint mcc_value_get_background(MccValue *value)
     return priv->bg;
 }
 
+const gchar *mcc_value_get_tips(MccValue *value)
+{
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    return priv->tips;
+}
+
+void mcc_value_append_tips_printf(MccValue *value, const gchar *fmt, ...)
+{
+    MccValuePrivate *priv = mcc_value_get_private(value);
+    va_list ap;
+    gint size;
+    
+    size = strlen(priv->tips);
+    if (TIPS_MAXSIZ - size < 2)
+	return;
+    
+    va_start(ap, fmt);
+    vsnprintf(priv->tips + size, TIPS_MAXSIZ - size, fmt, ap);
+    va_end(ap);
+}
+
 static void mcc_value_clear(MccValue *value)
 {
     MccValuePrivate *priv = mcc_value_get_private(value);
@@ -116,6 +143,7 @@ static void mcc_value_clear(MccValue *value)
 	priv->fgs[i] = 0;
     }
     priv->bg = 0;
+    priv->tips[0] = '\0';
 }
 
 static MccValue *mcc_value_new_internal(gint nvalues)

@@ -181,6 +181,19 @@ static void mcc_src_disk_io_set_subidx(MccDataSource *datasrc)
     datasrc->sublabel = g_strdup(MCC_DATA_SOURCE_GET_CLASS(datasrc)->sublabels[datasrc->subidx]);
 }
 
+static void append_tips(MccValue *value, const gchar *label, gint64 val)
+{
+    if (val < 1024) {
+	mcc_value_append_tips_printf(value, "\n%s %dB", label, (gint) val);
+    } else if (val < 1024 * 1024) {
+	mcc_value_append_tips_printf(value, "\n%s %3.1fKB", label, ((gdouble) val / 1024));
+    } else if (val < 1024 * 1024 * 1024) {
+	mcc_value_append_tips_printf(value, "\n%s %3.1fMB", label, ((gdouble) val / 1024 / 1024));
+    } else {
+	mcc_value_append_tips_printf(value, "\n%s %3.1fGB", label, ((gdouble) val / 1024 / 1024 / 1024));
+    }
+}
+
 static MccValue *mcc_src_disk_io_get(MccDataSource *datasrc)
 {
     MccSrcDiskIO *src = MCC_SRC_DISK_IO(datasrc);
@@ -191,6 +204,10 @@ static MccValue *mcc_src_disk_io_get(MccDataSource *datasrc)
 	mcc_value_set_value(value, i, src_class->newdata[i] - src_class->olddata[i]);
 	mcc_value_set_foreground(value, i, i);
     }
+    mcc_value_append_tips_printf(value, "%s - %s",
+	    datasrc->sublabel, src_class->parent_class.label);
+    append_tips(value, "in", src_class->newdata[0] - src_class->olddata[0]);
+    append_tips(value, "out", src_class->newdata[1] - src_class->olddata[1]);
     
     return value;
 }
