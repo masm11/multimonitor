@@ -20,6 +20,7 @@
 
 #include "../config.h"
 #include <gtk/gtkmisc.h>
+#include <gtk/gtktooltips.h>
 #include "mccvalue.h"
 
 #define MCC_TYPE_GRAPH                  (mcc_graph_get_type ())
@@ -47,7 +48,8 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
 	gint nbg, const GdkColor *bg,
 	gboolean dynamic_scaling,
-	const gchar *label, const gchar *sublabel);
+	const gchar *label, const gchar *sublabel,
+	GtkTooltips *tooltips);
 void mcc_graph_add(MccGraph *graph, MccValue *value);
 void mcc_graph_get_fg(MccGraph *graph, gint i, GdkColor *fg);
 void mcc_graph_get_bg(MccGraph *graph, gint i, GdkColor *bg);

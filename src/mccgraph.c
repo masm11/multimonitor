@@ -19,6 +19,7 @@
 #include <string.h>
 #include <math.h>
 #include <gtk/gtkmain.h>
+#include <gtk/gtktooltips.h>
 #include "mccvalue.h"
 #include "mccgraph.h"
 
@@ -49,6 +50,10 @@ typedef struct _MccGraphPrivate {
     gchar *fontname;
     gchar *label, *sublabel;
     PangoLayout *layout;
+    
+    GtkTooltips *tooltips;
+    gboolean tooltips_enabled;
+    const gchar *tips;
 } MccGraphPrivate;
 
 G_DEFINE_TYPE(MccGraph, mcc_graph, GTK_TYPE_MISC)
@@ -62,6 +67,8 @@ static void create_layout(MccGraph *graph);
 static void create_gc(MccGraph *graph);
 static void create_pixmap(MccGraph *graph);
 static void shift_and_draw(MccGraph *graph);
+static gboolean mcc_graph_enter_notify(GtkWidget *widget, GdkEventCrossing *ev);
+static gboolean mcc_graph_leave_notify(GtkWidget *widget, GdkEventCrossing *ev);
 
 static inline MccGraphPrivate *mcc_graph_get_private(MccGraph *graph)
 {
@@ -81,6 +88,8 @@ static void mcc_graph_class_init(MccGraphClass *klass)
     widget_class->expose_event = mcc_graph_expose;
     widget_class->realize = mcc_graph_realize;
     widget_class->size_allocate = mcc_graph_size_allocate;
+    widget_class->enter_notify_event = mcc_graph_enter_notify;
+    widget_class->leave_notify_event = mcc_graph_leave_notify;
     
     g_type_class_add_private(klass, sizeof (MccGraphPrivate));
 }
@@ -105,6 +114,12 @@ static void mcc_graph_init(MccGraph *self)
     
     priv->label = g_strdup("label");
     priv->sublabel = g_strdup("sublabel");
+    
+    priv->tooltips = NULL;
+    priv->tooltips_enabled = FALSE;
+    priv->tips = NULL;
+    
+    gtk_widget_add_events(GTK_WIDGET(self), GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK);
 }
 
 static void mcc_graph_finalize(GObject *object)
@@ -403,6 +418,32 @@ static void shift_and_draw(MccGraph *graph)
     gtk_widget_queue_clear(GTK_WIDGET(graph));
 }
 
+static gboolean mcc_graph_enter_notify(GtkWidget *widget, GdkEventCrossing *ev)
+{
+    MccGraph *graph = MCC_GRAPH(widget);
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    
+    if (!priv->tooltips_enabled) {
+	priv->tooltips_enabled = TRUE;
+	gtk_tooltips_set_tip(priv->tooltips, GTK_WIDGET(graph), priv->tips, NULL);
+    }
+    
+    return TRUE;
+}
+
+static gboolean mcc_graph_leave_notify(GtkWidget *widget, GdkEventCrossing *ev)
+{
+    MccGraph *graph = MCC_GRAPH(widget);
+    MccGraphPrivate *priv = mcc_graph_get_private(graph);
+    
+    if (priv->tooltips_enabled) {
+	priv->tooltips_enabled = FALSE;
+	gtk_tooltips_set_tip(priv->tooltips, GTK_WIDGET(graph), NULL, NULL);
+    }
+    
+    return TRUE;
+}
+
 void mcc_graph_add(MccGraph *graph, MccValue *value)
 {
     MccGraphPrivate *priv = mcc_graph_get_private(graph);
@@ -437,6 +478,10 @@ void mcc_graph_add(MccGraph *graph, MccValue *value)
 	shift_and_draw(graph);
     else
 	create_pixmap(graph);
+    
+    priv->tips = mcc_value_get_tips(value);
+    if (priv->tooltips_enabled)
+	gtk_tooltips_set_tip(priv->tooltips, GTK_WIDGET(graph), priv->tips, NULL);
 }
 
 void mcc_graph_get_fg(MccGraph *graph, gint i, GdkColor *fg)
@@ -490,7 +535,8 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
 	gint nfg, const GdkColor *fg,
 	gint nbg, const GdkColor *bg,
 	gboolean dynamic_scaling,
-	const gchar *label, const gchar *sublabel)
+	const gchar *label, const gchar *sublabel,
+	GtkTooltips *tooltips)
 {
     MccGraph *graph;
     
@@ -511,6 +557,8 @@ GtkWidget *mcc_graph_new(gint nvalues, gdouble min, gdouble max,
     priv->fontname = g_strdup("sans 6");
     priv->label = g_strdup(label);
     priv->sublabel = g_strdup(sublabel);
+    
+    priv->tooltips = tooltips;
     
     return GTK_WIDGET(graph);
 }
