@@ -1,5 +1,10 @@
 Multi Monitor for Xfce
 
+まず注意事項
+
+  新しめな xfce4 では正常に動作しません。古い xfce4 なら動くかもしれません。
+
+
 はじめに
 
   これは Xfce 用のパネルの plugin です。
