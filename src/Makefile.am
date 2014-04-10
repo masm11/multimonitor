@@ -33,4 +33,4 @@ multi_monitor_SOURCES = \
 AM_CPPFLAGS = $(GTK_CFLAGS)
 # -DLOCALEDIR=\"$(localedir)\"
 AM_CFLAGS = -Wall -fgnu89-inline
-LDADD = $(GTK_LIBS)
+LDADD = $(GTK_LIBS) -lm
