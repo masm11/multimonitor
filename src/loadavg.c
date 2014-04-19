@@ -72,7 +72,7 @@ void loadavg_read_data(gint type)
     
     gdouble *p = g_new0(gdouble, 1);
     *p = load;
-    list[n] = g_list_append(list[n], p);
+    list[n] = g_list_prepend(list[n], p);
 }
 
 void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)

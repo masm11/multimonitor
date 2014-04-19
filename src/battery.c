@@ -49,7 +49,7 @@ void battery_read_data(gint type)
     
     gint *p = g_new0(gint, 1);
     *p = cap;
-    list[n] = g_list_append(list[n], p);
+    list[n] = g_list_prepend(list[n], p);
 }
 
 void battery_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
