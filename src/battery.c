@@ -60,7 +60,7 @@ void battery_read_data(gint type)
 	
 	char *ep = NULL;
 	cap = strtol(buf, &ep, 0);
-	if (ep == NULL || *ep == '\0')
+	if (!(ep != NULL && *ep != '\0'))
 	    cap = -1;
     }
     
