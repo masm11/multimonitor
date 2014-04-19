@@ -306,6 +306,8 @@ static void plugin_start(XfcePanelPlugin *plg)
 	gtk_widget_show(work[type].drawable);
 	gtk_box_pack_start(GTK_BOX(box), work[type].drawable, FALSE, FALSE, 0);
 	work[type].show = TRUE;
+	
+	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 10, 10, -1);
     }
     
     PangoFontDescription *font_desc = pango_font_description_from_string("fixed");
