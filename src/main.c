@@ -35,27 +35,28 @@ static struct {
     GtkWidget *drawable;
     GdkPixmap *pix;
     PangoLayout *layout;
+    gboolean show;
 } work[TYPE_NR];
 static GdkGC *bg, *fg, *err;
 
 static struct {
-    const char *label;
+    const char *label, *sublabel;
     void (*read_data)(gint);
     void (*draw_1)(gint, GdkPixmap *, GdkGC *, GdkGC *, GdkGC *);
 } funcs[] = {
-    { "Battery\nBAT0",   battery_read_data, battery_draw_1 },
-    { "Battery\nBAT1",   battery_read_data, battery_draw_1 },
-    { "CPU Freq\nCPU 0", cpufreq_read_data, cpufreq_draw_1 },
-    { "CPU Freq\nCPU 1", cpufreq_read_data, cpufreq_draw_1 },
-    { "CPU Freq\nCPU 2", cpufreq_read_data, cpufreq_draw_1 },
-    { "CPU Freq\nCPU 3", cpufreq_read_data, cpufreq_draw_1 },
-    { "Loadavg\n1min",   loadavg_read_data, loadavg_draw_1 },
-    { "Loadavg\n5min",   loadavg_read_data, loadavg_draw_1 },
-    { "Loadavg\n15min",  loadavg_read_data, loadavg_draw_1 },
-    { "CPU Load\nCPU 0", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load\nCPU 1", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load\nCPU 2", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load\nCPU 3", cpuload_read_data, cpuload_draw_1 },
+    { "Battery",  "BAT0",  battery_read_data, battery_draw_1 },
+    { "Battery",  "BAT1",  battery_read_data, battery_draw_1 },
+    { "CPU Freq", "CPU 0", cpufreq_read_data, cpufreq_draw_1 },
+    { "CPU Freq", "CPU 1", cpufreq_read_data, cpufreq_draw_1 },
+    { "CPU Freq", "CPU 2", cpufreq_read_data, cpufreq_draw_1 },
+    { "CPU Freq", "CPU 3", cpufreq_read_data, cpufreq_draw_1 },
+    { "Loadavg",  "1min",  loadavg_read_data, loadavg_draw_1 },
+    { "Loadavg",  "5min",  loadavg_read_data, loadavg_draw_1 },
+    { "Loadavg",  "15min", loadavg_read_data, loadavg_draw_1 },
+    { "CPU Load", "CPU 0", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load", "CPU 1", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load", "CPU 2", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1 },
 };
 
 static gboolean timer(gpointer data)
@@ -98,7 +99,6 @@ static gboolean timer(gpointer data)
     return TRUE;
 }
 
-#if 0
 static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 {
     XfceRc *rc;
@@ -111,55 +111,10 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
     if (rc == NULL)
 	return;
     
-    GList *list = gtk_container_get_children(GTK_CONTAINER(box));
-    
-    xfce_rc_set_group(rc, NULL);
-    xfce_rc_write_int_entry(rc, "num", g_list_length(list));
-    
-    for (int no = 0; list != NULL; no++) {
-	MccGraph *graph = list->data;
-	char grp[16];
-	
-	sprintf(grp, "graph%d", no);
-	xfce_rc_set_group(rc, grp);
-	
-	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
-	
-	xfce_rc_write_entry(rc, "datasrc_name", g_type_name_from_instance(&src->object.g_type_instance));
-	xfce_rc_write_int_entry(rc, "datasrc_subindex", src->subidx);
-	
-	for (int i = 0; i < src->nfg; i++) {
-	    GdkColor col;
-	    mcc_graph_get_fg(graph, i, &col);
-	    char key[64], buf[64];
-	    sprintf(key, "fg%d", i);
-	    sprintf(buf, "#%04x%04x%04x", col.red, col.green, col.blue);
-	    xfce_rc_write_entry(rc, key, buf);
-	}
-	
-	for (int i = 0; i < src->nbg; i++) {
-	    GdkColor col;
-	    mcc_graph_get_bg(graph, i, &col);
-	    char key[64], buf[64];
-	    sprintf(key, "bg%d", i);
-	    sprintf(buf, "#%04x%04x%04x", col.red, col.green, col.blue);
-	    xfce_rc_write_entry(rc, key, buf);
-	}
-	
-	{
-	    gint width, height;
-	    gint size = 0;
-	    gtk_widget_get_size_request(GTK_WIDGET(graph), &width, &height);
-	    if (width >= 1)
-		size = width;
-	    if (height >= 1)
-		size = height;
-	    xfce_rc_write_int_entry(rc, "size", size);
-	}
-	
-	xfce_rc_write_entry(rc, "font", mcc_graph_get_font(graph));
-	
-	list = g_list_delete_link(list, list);
+    for (gint type = 0; type < TYPE_NR; type++) {
+	char key[128];
+	snprintf(key, sizeof key, "show%d", type);
+	xfce_rc_write_bool_entry(rc, key, work[type].show);
     }
     
     xfce_rc_close(rc);
@@ -178,90 +133,15 @@ static void load_config(void)
 	return;
     
     xfce_rc_set_group(rc, NULL);
-    gint num = xfce_rc_read_int_entry(rc, "num", 0);
     
-    for (int no = 0; no < num; no++) {
-	char grp[16];
-	sprintf(grp, "graph%d", no);
-	xfce_rc_set_group(rc, grp);
-	
-	const gchar *srcname = xfce_rc_read_entry(rc, "datasrc_name", NULL);
-	gint subidx = xfce_rc_read_int_entry(rc, "datasrc_subindex", -1);
-	if (srcname == NULL || subidx < 0) {
-	    // これが得られなかったら、どうにもならん。
-	    continue;
-	}
-	
-	GType type = g_type_from_name(srcname);
-	if (type == 0) {
-	    // そんな class は知らねー。
-	    continue;
-	}
-	
-	GtkWidget *g = add_graph(type, subidx);
-	MccGraph *graph = MCC_GRAPH(g);
-	
-	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
-	
-	for (int i = 0; i < src->nfg; i++) {
-	    GdkColor col;
-	    gchar key[64];
-	    sprintf(key, "fg%d", i);
-	    const gchar *cstr = xfce_rc_read_entry(rc, key, NULL);
-	    if (cstr != NULL && gdk_color_parse(cstr, &col))
-		mcc_graph_set_fg(graph, i, &col);
-	}
-	
-	for (int i = 0; i < src->nbg; i++) {
-	    GdkColor col;
-	    gchar key[64];
-	    sprintf(key, "bg%d", i);
-	    const gchar *cstr = xfce_rc_read_entry(rc, key, NULL);
-	    if (cstr != NULL && gdk_color_parse(cstr, &col))
-		mcc_graph_set_bg(graph, i, &col);
-	}
-	
-	{
-	    gint width, height;
-	    gint size = xfce_rc_read_int_entry(rc, "size", 0);
-	    if (size >= 1) {
-		gtk_widget_get_size_request(g, &width, &height);
-		if (width >= 1)
-		    width = size;
-		if (height >= 1)
-		    height = size;
-		gtk_widget_set_size_request(g, width, height);
-	    }
-	}
-	
-	{
-	    const gchar *fontname = xfce_rc_read_entry(rc, "font", NULL);
-	    if (fontname != NULL)
-		mcc_graph_set_font(graph, fontname);
-	}
+    for (gint type = 0; type < TYPE_NR; type++) {
+	char key[128];
+	snprintf(key, sizeof key, "show%d", type);
+	work[type].show = xfce_rc_read_bool_entry(rc, key, TRUE);
     }
     
     xfce_rc_close(rc);
 }
-
-static void print_hier(int indent, GtkWidget *w)
-{
-    gint width, height;
-    gtk_widget_get_size_request(w, &width, &height);
-    fprintf(stderr, "%*s%s %dx%d %dx%d %s\n",
-	    indent, "",
-	    G_OBJECT_TYPE_NAME(w),
-	    width, height,
-	    w->allocation.width, w->allocation.height,
-	    gtk_widget_get_visible(w) ? "visible" : "non-visible"
-);
-    if (GTK_IS_CONTAINER(w)) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(w));
-	for ( ; list != NULL; list = g_list_next(list))
-	    print_hier(indent + 1, list->data);
-    }
-}
-#endif
 
 static void change_size_iter(gint type, gint size)
 {
@@ -328,23 +208,55 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     gtk_container_add(GTK_CONTAINER(plugin), box);
 }
 
-#if 0
+static void configure_toggled_cb(GtkWidget *btn, gpointer data)
+{
+    gint type = (gint) data;
+    work[type].show = !work[type].show;
+    if (work[type].show)
+	gtk_widget_show(work[type].drawable);
+    else
+	gtk_widget_hide(work[type].drawable);
+}
+
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 {
-    preferences_create(box, datasrc_types);
-    // 戻ってきたら、preferences はもう閉じてる。
+    GtkWidget *dialog;
+    
+    dialog = gtk_dialog_new_with_buttons(
+	    "Multi Monitor Preferences", NULL, GTK_DIALOG_MODAL,
+	    "Close", GTK_RESPONSE_CLOSE,
+	    NULL);
+    gtk_widget_show(dialog);
+    
+    GtkWidget *box = gtk_vbox_new(FALSE, 0);
+    gtk_widget_show(box);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), box, FALSE, FALSE, 0);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	char label[128];
+	snprintf(label, sizeof label, "%s %s", funcs[type].label, funcs[type].sublabel);
+	GtkWidget *btn = gtk_check_button_new_with_label(label);
+	gtk_widget_show(btn);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(btn), work[type].show);
+	g_signal_connect(btn, "toggled", G_CALLBACK(configure_toggled_cb), (gpointer) type);
+	gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 0);
+    }
+    
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    
+    gtk_widget_destroy(dialog);
+    
     save_config_cb(plugin, NULL);
 }
-#endif
 
 static void plugin_start(XfcePanelPlugin *plg)
 {
     plugin = plg;
     
-//    g_signal_connect(plugin, "configure-plugin", G_CALLBACK(configure_cb), NULL);
+    g_signal_connect(plugin, "configure-plugin", G_CALLBACK(configure_cb), NULL);
     g_signal_connect(plugin, "size-changed", G_CALLBACK(change_size_cb), NULL);
     g_signal_connect(plugin, "orientation-changed", G_CALLBACK(change_orient_cb), NULL);
-//    g_signal_connect(plugin, "save", G_CALLBACK(save_config_cb), NULL);
+    g_signal_connect(plugin, "save", G_CALLBACK(save_config_cb), NULL);
     g_signal_connect(plugin, "about", G_CALLBACK(about), NULL);
 #if 0
     g_signal_connect(plugin, "free-data", G_CALLBACK(destroy_cb), app);
@@ -393,13 +305,16 @@ static void plugin_start(XfcePanelPlugin *plg)
 	work[type].drawable = gtk_drawing_area_new();
 	gtk_widget_show(work[type].drawable);
 	gtk_box_pack_start(GTK_BOX(box), work[type].drawable, FALSE, FALSE, 0);
+	work[type].show = TRUE;
     }
     
     PangoFontDescription *font_desc = pango_font_description_from_string("fixed");
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	gtk_widget_modify_font(work[type].drawable, font_desc);
-	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, funcs[type].label);
+	char label[128];
+	snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
+	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, label);
 	GdkColor color = {
 	    .red = 0xffff,
 	    .green = 0xffff,
@@ -410,7 +325,14 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     pango_font_description_free(font_desc);
     
-    //load_config();
+    load_config();
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	if (work[type].show)
+	    gtk_widget_show(work[type].drawable);
+	else
+	    gtk_widget_hide(work[type].drawable);
+    }
     
     g_timeout_add(1000, timer, NULL);
     
