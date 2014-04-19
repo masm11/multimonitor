@@ -30,14 +30,16 @@ static XfcePanelPlugin *plugin;
 static GtkWidget *box;
 static GtkWidget *drawable[TYPE_NR] = { NULL, };
 static GdkPixmap *pix[TYPE_NR] = { NULL, };
+static PangoLayout *layout[TYPE_NR] = { NULL, };
 static GdkGC *bg, *fg, *err;
 
 static struct {
+    const char *label;
     void (*read_data)(gint);
     void (*draw_1)(gint, GdkPixmap *, GdkGC *, GdkGC *, GdkGC *);
 } funcs[] = {
-    { battery_read_data, battery_draw_1 },
-    { battery_read_data, battery_draw_1 },
+    { "Battery\nBAT0", battery_read_data, battery_draw_1 },
+    { "Battery\nBAT1", battery_read_data, battery_draw_1 },
 };
 
 static gboolean timer(gpointer data)
@@ -60,6 +62,18 @@ static gboolean timer(gpointer data)
 		drawable[type]->allocation.width, drawable[type]->allocation.height);
     }
     
+    for (gint type = 0; type < TYPE_NR; type++) {
+	gtk_paint_layout(drawable[type]->style,
+		drawable[type]->window,
+		GTK_WIDGET_STATE(drawable[type]),
+		TRUE,
+		NULL,	// &event->area,
+		drawable[type],
+		"graph",
+		0, 0,
+		layout[type]);
+    }
+
     return TRUE;
 }
 
@@ -381,10 +395,24 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	drawable[type] = gtk_drawing_area_new();
-//	gtk_drawing_area_size(GTK_DRAWING_AREA(drawable[type]), 40, 40);
 	gtk_widget_show(drawable[type]);
 	gtk_box_pack_start(GTK_BOX(box), drawable[type], FALSE, FALSE, 0);
     }
+    
+    PangoFontDescription *font_desc = pango_font_description_from_string("fixed");
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	gtk_widget_modify_font(drawable[type], font_desc);
+	layout[type] = gtk_widget_create_pango_layout(drawable[type], funcs[type].label);
+	GdkColor color = {
+	    .red = 0xffff,
+	    .green = 0xffff,
+	    .blue = 0xffff,
+	};
+	gtk_widget_modify_text(drawable[type], GTK_STATE_NORMAL, &color);
+    }
+    
+    pango_font_description_free(font_desc);
     
     //load_config();
     
