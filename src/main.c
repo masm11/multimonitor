@@ -275,9 +275,15 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 	    NULL);
     gtk_widget_show(dialog);
     
+    GtkWidget *frame = gtk_frame_new("Show or Hide");
+    gtk_widget_show(frame);
+    gtk_container_set_border_width(GTK_CONTAINER(frame), 5);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), frame, FALSE, FALSE, 0);
+    
     GtkWidget *box = gtk_vbox_new(FALSE, 0);
     gtk_widget_show(box);
-    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), box, FALSE, FALSE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(box), 5);
+    gtk_container_add(GTK_CONTAINER(frame), box);
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	char label[128];
@@ -289,9 +295,18 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 	gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 0);
     }
     
+    GtkWidget *fframe = gtk_frame_new("Font");
+    gtk_widget_show(fframe);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), fframe, FALSE, FALSE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(fframe), 5);
+    
     GtkWidget *fbox = gtk_hbox_new(FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(fframe), fbox);
+    gtk_container_set_border_width(GTK_CONTAINER(fbox), 5);
+    
     GtkWidget *flbl = gtk_label_new("Font:");
     GtkWidget *fbtn = gtk_font_button_new();
+    
     gtk_widget_show(fbox);
     gtk_widget_show(flbl);
     gtk_widget_show(fbtn);
@@ -300,6 +315,10 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     gtk_box_pack_start(GTK_BOX(fbox), fbtn, FALSE, FALSE, 0);
     gtk_font_button_set_font_name(GTK_FONT_BUTTON(fbtn), fontname);
     g_signal_connect(G_OBJECT(fbtn), "font-set", G_CALLBACK(font_set_cb), NULL);
+    
+    GtkWidget *sep = gtk_hseparator_new();
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), sep, FALSE, FALSE, 0);
+    gtk_widget_show(sep);
     
     gtk_dialog_run(GTK_DIALOG(dialog));
     
