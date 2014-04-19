@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(multi-monitor, 0.5, masm@flowernet.gr.jp)
+AC_INIT(multi-monitor, 2.0, masm@flowernet.gr.jp)
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
-AC_CONFIG_SRCDIR([src/mccgraph.c])
+AC_CONFIG_SRCDIR([src/main.c])
 AM_CONFIG_HEADER([config.h])
 
 # Checks for programs.
@@ -23,12 +23,9 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([string.h unistd.h])
 
 # Checks for library functions.
-AC_CHECK_FUNCS([memset strstr openat fdopendir])
+AC_CHECK_FUNCS([memset strstr openat])
 if test $ac_cv_func_openat != yes; then
   AC_MSG_ERROR([You need openat() system call.])
-fi
-if test $ac_cv_func_fdopendir != yes; then
-  AC_MSG_ERROR([You need fdopendir() function.])
 fi
 
 # xfce and gtk

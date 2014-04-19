@@ -33,7 +33,7 @@ void about(void)
     if (dialog == NULL) {
 	XfceAboutInfo *info = xfce_about_info_new(PACKAGE_NAME, PACKAGE_VERSION,
 		"A Graphical monitor of multiple values.",
-		XFCE_COPYRIGHT_TEXT("2007", "Yuuki Harano"),
+		XFCE_COPYRIGHT_TEXT("2007,2014", "Yuuki Harano"),
 		XFCE_LICENSE_GPL);
 	
 	dialog = xfce_about_dialog_new_with_values(NULL, info, NULL);
