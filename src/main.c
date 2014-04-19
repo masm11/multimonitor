@@ -210,7 +210,7 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
 
 static void configure_toggled_cb(GtkWidget *btn, gpointer data)
 {
-    gint type = (gint) data;
+    gint type = GPOINTER_TO_SIZE(data);
     work[type].show = !work[type].show;
     if (work[type].show)
 	gtk_widget_show(work[type].drawable);
@@ -238,7 +238,7 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 	GtkWidget *btn = gtk_check_button_new_with_label(label);
 	gtk_widget_show(btn);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(btn), work[type].show);
-	g_signal_connect(btn, "toggled", G_CALLBACK(configure_toggled_cb), (gpointer) type);
+	g_signal_connect(btn, "toggled", G_CALLBACK(configure_toggled_cb), GSIZE_TO_POINTER(type));
 	gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 0);
     }
     
@@ -340,6 +340,8 @@ static void plugin_start(XfcePanelPlugin *plg)
     cpufreq_init();
     loadavg_init();
     cpuload_init();
+    
+    timer(NULL);
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)
