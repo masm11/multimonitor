@@ -21,6 +21,4 @@
 #include "../config.h"
 #include <gtk/gtkwidget.h>
 
-GtkWidget *add_graph(GType type, gint subidx);
-
 #endif

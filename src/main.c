@@ -20,48 +20,50 @@
 #include <gtk/gtk.h>
 #include <libxfce4util/libxfce4util.h>
 #include <libxfce4panel/xfce-panel-plugin.h>
-#include "mccgraph.h"
-#include "mccvalue.h"
-#include "mccdatasource.h"
-#include "mccsrccpufreq.h"
-#include "mccsrccpuload.h"
-#include "mccsrcbattery.h"
-#include "mccsrcloadavg.h"
-#include "mccsrcmemory.h"
-#include "mccsrcdiskio.h"
 #include "preferences.h"
+#include "types.h"
 #include "about.h"
+#include "battery.h"
 #include "main.h"
 
-static GType *datasrc_types;
-
 static XfcePanelPlugin *plugin;
-static GtkWidget *ev;
 static GtkWidget *box;
-static GtkTooltips *tooltips;
+static GtkWidget *drawable[TYPE_NR] = { NULL, };
+static GdkPixmap *pix[TYPE_NR] = { NULL, };
+static GdkGC *bg, *fg, *err;
+
+static struct {
+    void (*read_data)(gint);
+    void (*draw_1)(gint, GdkPixmap *, GdkGC *, GdkGC *, GdkGC *);
+} funcs[] = {
+    { battery_read_data, battery_draw_1 },
+    { battery_read_data, battery_draw_1 },
+};
 
 static gboolean timer(gpointer data)
 {
-    for (gint i = 0; datasrc_types[i] != 0; i++)
-	mcc_data_source_read(datasrc_types[i]);
+    for (gint type = 0; type < TYPE_NR; type++)
+	(*funcs[type].read_data)(type);
     
-    GList *list = gtk_container_get_children(GTK_CONTAINER(box));
-    while (list != NULL) {
-	MccGraph *graph = list->data;
-	MccDataSource *src = g_object_get_data(G_OBJECT(graph), "mcc-datasrc");
-	
-	if (src->add_on_tick || mcc_data_source_has_new_data(src)) {
-	    MccValue *value = mcc_data_source_get(src);
-	    mcc_graph_add(graph, value);
-	    mcc_value_unref(value);
-	}
-	
-	list = g_list_delete_link(list, list);
+    for (gint type = 0; type < TYPE_NR; type++) {
+	gdk_draw_drawable(pix[type], fg, pix[type],
+		1, 0,
+		0, 0, drawable[type]->allocation.width - 1, drawable[type]->allocation.height);
+    }
+    
+    for (gint type = 0; type < TYPE_NR; type++)
+	(*funcs[type].draw_1)(type, pix[type], bg, fg, err);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	gdk_draw_drawable(drawable[type]->window, fg, pix[type],
+		0, 0, drawable[type]->allocation.x, drawable[type]->allocation.y,
+		drawable[type]->allocation.width, drawable[type]->allocation.height);
     }
     
     return TRUE;
 }
 
+#if 0
 GtkWidget *add_graph(GType type, gint subidx)
 {
     MccDataSource *src = mcc_data_source_new(type, subidx);
@@ -232,16 +234,45 @@ static void load_config(void)
     xfce_rc_close(rc);
 }
 
+static void print_hier(int indent, GtkWidget *w)
+{
+    gint width, height;
+    gtk_widget_get_size_request(w, &width, &height);
+    fprintf(stderr, "%*s%s %dx%d %dx%d %s\n",
+	    indent, "",
+	    G_OBJECT_TYPE_NAME(w),
+	    width, height,
+	    w->allocation.width, w->allocation.height,
+	    gtk_widget_get_visible(w) ? "visible" : "non-visible"
+);
+    if (GTK_IS_CONTAINER(w)) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(w));
+	for ( ; list != NULL; list = g_list_next(list))
+	    print_hier(indent + 1, list->data);
+    }
+}
+#endif
+
+static void change_size_iter(gint type, gint size)
+{
+    gtk_drawing_area_size(GTK_DRAWING_AREA(drawable[type]), size, size);
+    gtk_widget_queue_resize(drawable[type]);
+    if (pix[type] != NULL)
+	g_object_unref(pix[type]);
+    pix[type] = gdk_pixmap_new(drawable[type]->window, size, size, -1);
+    gdk_draw_rectangle(pix[type], err, TRUE, 0, 0, size, size);
+}
+
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 {
-#if 0
-    if (get_applet_vert(plugin))
+    if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL)
 	gtk_widget_set_size_request(GTK_WIDGET(plugin), size, -1);
     else
-#endif
-	
-    // gtk_container_foreach(GTK_CONTAINER(app->pack), change_size_iter, NULL);
-	
+	gtk_widget_set_size_request(GTK_WIDGET(plugin), -1, size);
+    
+    for (gint type = 0; type < TYPE_NR; type++)
+	change_size_iter(type, size);
+    
     return FALSE;
 }
 
@@ -284,40 +315,26 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     }
     
     gtk_widget_destroy(oldbox);
-    gtk_container_add(GTK_CONTAINER(ev), box);
+    gtk_container_add(GTK_CONTAINER(plugin), box);
 }
 
+#if 0
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 {
     preferences_create(box, datasrc_types);
     // 戻ってきたら、preferences はもう閉じてる。
     save_config_cb(plugin, NULL);
 }
+#endif
 
 static void plugin_start(XfcePanelPlugin *plg)
 {
     plugin = plg;
     
-    GType types[] = {
-	MCC_TYPE_SRC_CPU_LOAD,
-	MCC_TYPE_SRC_CPU_FREQ,
-	MCC_TYPE_SRC_BATTERY,
-	MCC_TYPE_SRC_LOAD_AVG,
-	MCC_TYPE_SRC_MEMORY,
-	MCC_TYPE_SRC_DISK_IO,
-    };
-    datasrc_types = g_new0(GType, sizeof types / sizeof types[0] + 1);
-    memcpy(datasrc_types, types, sizeof types);
-    
-    // fixme: class の初期化のつもり。
-    for (int i = 0; datasrc_types[i] != 0; i++) {
-	g_type_class_ref(datasrc_types[i]);
-    }
-    
-    g_signal_connect(plugin, "configure-plugin", G_CALLBACK(configure_cb), NULL);
+//    g_signal_connect(plugin, "configure-plugin", G_CALLBACK(configure_cb), NULL);
     g_signal_connect(plugin, "size-changed", G_CALLBACK(change_size_cb), NULL);
     g_signal_connect(plugin, "orientation-changed", G_CALLBACK(change_orient_cb), NULL);
-    g_signal_connect(plugin, "save", G_CALLBACK(save_config_cb), NULL);
+//    g_signal_connect(plugin, "save", G_CALLBACK(save_config_cb), NULL);
     g_signal_connect(plugin, "about", G_CALLBACK(about), NULL);
 #if 0
     g_signal_connect(plugin, "free-data", G_CALLBACK(destroy_cb), app);
@@ -325,38 +342,59 @@ static void plugin_start(XfcePanelPlugin *plg)
     xfce_panel_plugin_menu_show_about(plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
     
-    tooltips = gtk_tooltips_new();
-    
-    ev = gtk_event_box_new();
-    gtk_widget_show(ev);
-    xfce_panel_plugin_add_action_widget(plugin, ev);
-    gtk_container_add(GTK_CONTAINER(plugin), ev);
+    xfce_panel_plugin_set_expand(plugin, TRUE);
     
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
-	box = gtk_hbox_new(FALSE, 1);
+	box = gtk_hbox_new(FALSE, 0);
     } else {
-	box = gtk_vbox_new(FALSE, 1);
+	box = gtk_vbox_new(FALSE, 0);
     }
     gtk_container_set_border_width(GTK_CONTAINER(box), 1);
     gtk_widget_show(box);
-    gtk_container_add(GTK_CONTAINER(ev), box);
+    gtk_container_add(GTK_CONTAINER(plugin), box);
     
-    load_config();
+    GdkColor color;
     
-    GList *list = gtk_container_get_children(GTK_CONTAINER(box));
-    if (list == NULL) {
-	GType type = datasrc_types[0];
-	add_graph(type, 0);
+    color.red = 0;
+    color.green = 0;
+    color.blue = 0;
+    // fixme: gdk_colormap_get_system()
+    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
+    bg = gdk_gc_new(GTK_WIDGET(plugin)->window);
+    gdk_gc_set_foreground(bg, &color);
+    
+    color.red = 65535;
+    color.green = 0;
+    color.blue = 0;
+    // fixme: gdk_colormap_get_system()
+    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
+    fg = gdk_gc_new(GTK_WIDGET(plugin)->window);
+    gdk_gc_set_foreground(fg, &color);
+    
+    color.red = 32768;
+    color.green = 32768;
+    color.blue = 32768;
+    // fixme: gdk_colormap_get_system()
+    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
+    err = gdk_gc_new(GTK_WIDGET(plugin)->window);
+    gdk_gc_set_foreground(err, &color);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	drawable[type] = gtk_drawing_area_new();
+	gtk_drawing_area_size(GTK_DRAWING_AREA(drawable[type]), 40, 40);
+	gtk_widget_show(drawable[type]);
+	gtk_box_pack_start(GTK_BOX(box), drawable[type], FALSE, FALSE, 0);
     }
     
-    g_timeout_add(250, timer, NULL);
+    //load_config();
     
-    gtk_main();
+    GList *list = gtk_container_get_children(GTK_CONTAINER(box));
     
-#if 0
-    for (int i = 0; datasrc_list[i] != NULL; i++)
-	(*datasrc_list[i]->sfini)();
-#endif
+    g_timeout_add(1000, timer, NULL);
+    
+    battery_init();
+    
+//    gtk_main();
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)
