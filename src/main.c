@@ -300,19 +300,9 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), fframe, FALSE, FALSE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(fframe), 5);
     
-    GtkWidget *fbox = gtk_hbox_new(FALSE, 0);
-    gtk_container_add(GTK_CONTAINER(fframe), fbox);
-    gtk_container_set_border_width(GTK_CONTAINER(fbox), 5);
-    
-    GtkWidget *flbl = gtk_label_new("Font:");
     GtkWidget *fbtn = gtk_font_button_new();
-    
-    gtk_widget_show(fbox);
-    gtk_widget_show(flbl);
     gtk_widget_show(fbtn);
-    gtk_box_pack_start(GTK_BOX(box), fbox, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(fbox), flbl, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(fbox), fbtn, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(fframe), fbtn);
     gtk_font_button_set_font_name(GTK_FONT_BUTTON(fbtn), fontname);
     g_signal_connect(G_OBJECT(fbtn), "font-set", G_CALLBACK(font_set_cb), NULL);
     
