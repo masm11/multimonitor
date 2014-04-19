@@ -79,3 +79,9 @@ void battery_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 		w - 1, h - 1);
     }
 }
+
+void battery_discard_data(gint type, gint size)
+{
+    int n = (type != TYPE_BATT_0);
+    list[n] = list_truncate(list[n], size);
+}

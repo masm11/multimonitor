@@ -43,20 +43,21 @@ static struct {
     const char *label, *sublabel;
     void (*read_data)(gint);
     void (*draw_1)(gint, GdkPixmap *, GdkGC *, GdkGC *, GdkGC *);
+    void (*discard_data)(gint, gint);
 } funcs[] = {
-    { "Battery",  "BAT0",  battery_read_data, battery_draw_1 },
-    { "Battery",  "BAT1",  battery_read_data, battery_draw_1 },
-    { "CPU Freq", "CPU 0", cpufreq_read_data, cpufreq_draw_1 },
-    { "CPU Freq", "CPU 1", cpufreq_read_data, cpufreq_draw_1 },
-    { "CPU Freq", "CPU 2", cpufreq_read_data, cpufreq_draw_1 },
-    { "CPU Freq", "CPU 3", cpufreq_read_data, cpufreq_draw_1 },
-    { "Loadavg",  "1min",  loadavg_read_data, loadavg_draw_1 },
-    { "Loadavg",  "5min",  loadavg_read_data, loadavg_draw_1 },
-    { "Loadavg",  "15min", loadavg_read_data, loadavg_draw_1 },
-    { "CPU Load", "CPU 0", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load", "CPU 1", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load", "CPU 2", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1 },
+    { "Battery",  "BAT0",  battery_read_data, battery_draw_1, battery_discard_data },
+    { "Battery",  "BAT1",  battery_read_data, battery_draw_1, battery_discard_data },
+    { "CPU Freq", "CPU 0", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
+    { "CPU Freq", "CPU 1", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
+    { "CPU Freq", "CPU 2", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
+    { "CPU Freq", "CPU 3", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
+    { "Loadavg",  "1min",  loadavg_read_data, loadavg_draw_1, loadavg_discard_data },
+    { "Loadavg",  "5min",  loadavg_read_data, loadavg_draw_1, loadavg_discard_data },
+    { "Loadavg",  "15min", loadavg_read_data, loadavg_draw_1, loadavg_discard_data },
+    { "CPU Load", "CPU 0", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
+    { "CPU Load", "CPU 1", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
+    { "CPU Load", "CPU 2", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
+    { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
 };
 
 static gboolean timer(gpointer data)
@@ -95,7 +96,11 @@ static gboolean timer(gpointer data)
 		0, 0,
 		work[type].layout);
     }
-
+    
+    // 余分なデータを捨てる。
+    for (gint type = 0; type < TYPE_NR; type++)
+	(*funcs[type].discard_data)(type, work[type].drawable->allocation.width);
+    
     return TRUE;
 }
 
@@ -249,6 +254,20 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     save_config_cb(plugin, NULL);
 }
 
+static GdkGC *alloc_color_gc(GdkWindow *win, guint16 r, guint16 g, guint16 b)
+{
+    GdkColor color = {
+	.red = r,
+	.green = g,
+	.blue = b,
+    };
+    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
+    GdkGC *gc = gdk_gc_new(win);
+    gdk_gc_set_foreground(gc, &color);
+    
+    return gc;
+}
+
 static void plugin_start(XfcePanelPlugin *plg)
 {
     plugin = plg;
@@ -264,7 +283,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     xfce_panel_plugin_menu_show_about(plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
     
-    xfce_panel_plugin_set_expand(plugin, FALSE);
+    xfce_panel_plugin_set_expand(plugin, TRUE);
     
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
 	box = gtk_hbox_new(FALSE, 0);
@@ -276,28 +295,9 @@ static void plugin_start(XfcePanelPlugin *plg)
     gtk_container_add(GTK_CONTAINER(plugin), box);
     xfce_panel_plugin_add_action_widget(plugin, box);
     
-    GdkColor color;
-    
-    color.red = 0;
-    color.green = 0;
-    color.blue = 0;
-    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
-    bg = gdk_gc_new(GTK_WIDGET(plugin)->window);
-    gdk_gc_set_foreground(bg, &color);
-    
-    color.red = 65535;
-    color.green = 0;
-    color.blue = 0;
-    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
-    fg = gdk_gc_new(GTK_WIDGET(plugin)->window);
-    gdk_gc_set_foreground(fg, &color);
-    
-    color.red = 32768;
-    color.green = 32768;
-    color.blue = 32768;
-    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
-    err = gdk_gc_new(GTK_WIDGET(plugin)->window);
-    gdk_gc_set_foreground(err, &color);
+    bg = alloc_color_gc(GTK_WIDGET(plugin)->window, 0, 0, 0);
+    fg = alloc_color_gc(GTK_WIDGET(plugin)->window, 65535, 0, 0);
+    err = alloc_color_gc(GTK_WIDGET(plugin)->window, 32768, 32768, 32768);
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	work[type].drawable = gtk_event_box_new();

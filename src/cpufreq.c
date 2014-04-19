@@ -27,7 +27,8 @@
 #include <unistd.h>
 #include "types.h"
 #include "sysfs.h"
-#include "battery.h"
+#include "list.h"
+#include "cpufreq.h"
 
 #define NCPU 4
 
@@ -83,4 +84,10 @@ void cpufreq_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 		w - 1, 0,
 		w - 1, h - 1);
     }
+}
+
+void cpufreq_discard_data(gint type, gint size)
+{
+    int n = (type - TYPE_CPUFREQ_0);
+    list[n] = list_truncate(list[n], size);
 }

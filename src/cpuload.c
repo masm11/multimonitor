@@ -27,7 +27,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "types.h"
-#include "battery.h"
+#include "list.h"
+#include "cpuload.h"
 
 #define NCPU 4
 #define NDATA 8
@@ -112,4 +113,10 @@ void cpuload_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 		w - 1, 0,
 		w - 1, h - 1);
     }
+}
+
+void cpuload_discard_data(gint type, gint size)
+{
+    int n = (type - TYPE_CPULOAD_0);
+    list[n] = list_truncate(list[n], size);
 }

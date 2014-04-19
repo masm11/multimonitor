@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <math.h>
 #include "types.h"
+#include "list.h"
 #include "loadavg.h"
 
 #define NAVG 3
@@ -109,4 +110,10 @@ void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 		w - 1, 0,
 		w - 1, h - 1);
     }
+}
+
+void loadavg_discard_data(gint type, gint size)
+{
+    int n = (type - TYPE_LOADAVG_1);
+    list[n] = list_truncate(list[n], size);
 }
