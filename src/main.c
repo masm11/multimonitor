@@ -170,10 +170,7 @@ static void load_config(void)
 
 static void change_size_iter(gint type, gboolean is_vert, gint size)
 {
-    if (is_vert)
-	gtk_widget_set_size_request(work[type].drawable, size, -1);
-    else
-	gtk_widget_set_size_request(work[type].drawable, -1, size);
+    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, size);
     gtk_widget_queue_resize(work[type].drawable);
     if (work[type].pix != NULL)
 	g_object_unref(work[type].pix);
@@ -183,12 +180,6 @@ static void change_size_iter(gint type, gboolean is_vert, gint size)
 
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 {
-    if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL)
-	gtk_widget_set_size_request(GTK_WIDGET(plugin), -1, size);
-    else
-	gtk_widget_set_size_request(GTK_WIDGET(plugin), size, -1);
-    gtk_widget_queue_resize(GTK_WIDGET(plugin));
-    
     for (gint type = 0; type < TYPE_NR; type++)
 	change_size_iter(type, xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL, size);
     
@@ -314,13 +305,12 @@ static void plugin_start(XfcePanelPlugin *plg)
     }
     gtk_container_set_border_width(GTK_CONTAINER(box), 1);
     gtk_widget_show(box);
+    gtk_container_add(GTK_CONTAINER(plugin), box);
+    xfce_panel_plugin_add_action_widget(plugin, box);
     
     bg = alloc_color_gc(GTK_WIDGET(plugin)->window, 0, 0, 0);
     fg = alloc_color_gc(GTK_WIDGET(plugin)->window, 65535, 0, 0);
     err = alloc_color_gc(GTK_WIDGET(plugin)->window, 32768, 32768, 32768);
-    
-    gtk_container_add(GTK_CONTAINER(plugin), box);
-    xfce_panel_plugin_add_action_widget(plugin, box);
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	work[type].ev = gtk_event_box_new();
