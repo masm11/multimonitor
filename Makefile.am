@@ -1,6 +1,6 @@
 SUBDIRS = src
 
-EXTRA_DIST = HACKING multi-monitor.desktop.in
+EXTRA_DIST = multi-monitor.desktop.in
 
 CLEANFILES = $(pkgdata_DATA)
 
