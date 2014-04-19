@@ -26,6 +26,7 @@
 #include "battery.h"
 #include "cpufreq.h"
 #include "loadavg.h"
+#include "cpuload.h"
 #include "main.h"
 
 static XfcePanelPlugin *plugin;
@@ -49,6 +50,10 @@ static struct {
     { "Loadavg\n1min", loadavg_read_data, loadavg_draw_1 },
     { "Loadavg\n5min", loadavg_read_data, loadavg_draw_1 },
     { "Loadavg\n15min", loadavg_read_data, loadavg_draw_1 },
+    { "CPU Load\nCPU0", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load\nCPU1", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load\nCPU2", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load\nCPU3", cpuload_read_data, cpuload_draw_1 },
 };
 
 static gboolean timer(gpointer data)
@@ -432,6 +437,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     battery_init();
     cpufreq_init();
     loadavg_init();
+    cpuload_init();
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)

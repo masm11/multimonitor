@@ -14,6 +14,11 @@ enum {
     TYPE_LOADAVG_5,
     TYPE_LOADAVG_15,
     
+    TYPE_CPULOAD_0,
+    TYPE_CPULOAD_1,
+    TYPE_CPULOAD_2,
+    TYPE_CPULOAD_3,
+    
     TYPE_NR
 };
 

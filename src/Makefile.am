@@ -11,7 +11,9 @@ multi_monitor_SOURCES = \
     cpufreq.c		\
     cpufreq.h		\
     loadavg.c		\
-    loadavg.h
+    loadavg.h		\
+    cpuload.c		\
+    cpuload.h
 
 #    preferences.c	\
 #    preferences.h	\

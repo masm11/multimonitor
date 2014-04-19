@@ -20,50 +20,62 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <math.h>
 #include "types.h"
-#include "loadavg.h"
+#include "battery.h"
 
-#define NAVG 3
+#define NCPU 4
+#define NDATA 8
 
 static int dir = -1;
-static GList *list[NAVG] = { NULL, };
+static GList *list[NCPU] = { NULL, };
+static gint olddata[NCPU][NDATA];
 
-void loadavg_init(void)
+void cpuload_init(void)
 {
     dir = open("/proc", O_RDONLY);
 }
 
-void loadavg_read_data(gint type)
+void cpuload_read_data(gint type)
 {
     if (dir < 0)
 	return;
     
-    int n = type - TYPE_LOADAVG_1;
+    gint n = type - TYPE_CPULOAD_0;
     
-    double load = -1;
+    char wanted[32];
+    snprintf(wanted, sizeof wanted, "cpu%d", n);
     
-    int fd = openat(dir, "loadavg", O_RDONLY);
+    gdouble load = -1;
+    int fd = openat(dir, "stat", O_RDONLY);
     if (fd >= 0) {
 	FILE *fp = fdopen(fd, "rt");
+	char name[32];
 	
-	switch (type) {
-	case TYPE_LOADAVG_1:
-	    fscanf(fp, "%lf", &load);
-	    break;
-	case TYPE_LOADAVG_5:
-	    fscanf(fp, "%*f %lf", &load);
-	    break;
-	case TYPE_LOADAVG_15:
-	    fscanf(fp, "%*f %*f %lf", &load);
-	    break;
-	default:
-	    load = -1;
+	while (!feof(fp)) {
+	    gint data[NDATA];
+	    if (fscanf(fp, "%s %d %d %d %d %d %d %d %d",
+			    name,
+			    &data[0], &data[1], &data[2], &data[3], &data[4], &data[5], &data[6], &data[7]) == 9) {
+		if (strcmp(name, wanted) == 0) {
+		    gint busy = 0;
+		    gint idle = 0;
+		    for (gint i = 0; i < NDATA; i++) {
+			if (i != 3)
+			    busy += data[i] - olddata[n][i];
+			else
+			    idle += data[i] - olddata[n][i];
+			olddata[n][i] = data[i];
+		    }
+		    load = (gdouble) busy / (busy + idle);
+		    break;
+		}
+	    }
 	}
 	
 	fclose(fp);
@@ -74,9 +86,9 @@ void loadavg_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
-void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
+void cpuload_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 {
-    int n = (type - TYPE_LOADAVG_1);
+    int n = (type - TYPE_CPULOAD_0);
     
     double load = -1;
     
@@ -88,22 +100,13 @@ void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
     gdk_pixmap_get_size(pix, &w, &h);
     
     if (load >= 0) {
-	gdouble level = ceil(load);
-	
 	gdk_draw_line(pix, bg,
 		w - 1, 0,
 		w - 1, h - 1);
 	
 	gdk_draw_line(pix, fg,
-		w - 2, h - h * load / level,
+		w - 2, h - h * load,
 		w - 2, h - 1);
-	
-	for (gint i = 1; i < level; i++) {
-	    gdk_draw_line(pix, err,
-		    w - 2, h - h * i / level,
-		    w - 1, h - h * i / level);
-	}
-	
     } else {
 	gdk_draw_line(pix, err,
 		w - 1, 0,
