@@ -145,7 +145,7 @@ static void load_config(void)
 
 static void change_size_iter(gint type, gint size)
 {
-    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, size);
+    gtk_widget_set_size_request(work[type].drawable, size, size);
     gtk_widget_queue_resize(work[type].drawable);
     if (work[type].pix != NULL)
 	g_object_unref(work[type].pix);
@@ -264,7 +264,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     xfce_panel_plugin_menu_show_about(plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
     
-    xfce_panel_plugin_set_expand(plugin, TRUE);
+    xfce_panel_plugin_set_expand(plugin, FALSE);
     
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
 	box = gtk_hbox_new(FALSE, 0);
@@ -274,6 +274,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     gtk_container_set_border_width(GTK_CONTAINER(box), 1);
     gtk_widget_show(box);
     gtk_container_add(GTK_CONTAINER(plugin), box);
+    xfce_panel_plugin_add_action_widget(plugin, box);
     
     GdkColor color;
     
@@ -302,9 +303,10 @@ static void plugin_start(XfcePanelPlugin *plg)
     gdk_gc_set_foreground(err, &color);
     
     for (gint type = 0; type < TYPE_NR; type++) {
-	work[type].drawable = gtk_drawing_area_new();
+	work[type].drawable = gtk_event_box_new();
 	gtk_widget_show(work[type].drawable);
 	gtk_box_pack_start(GTK_BOX(box), work[type].drawable, FALSE, FALSE, 0);
+	xfce_panel_plugin_add_action_widget(plugin, work[type].drawable);
 	work[type].show = TRUE;
 	
 	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 10, 10, -1);
