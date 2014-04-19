@@ -281,7 +281,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     color.red = 0;
     color.green = 0;
     color.blue = 0;
-    // fixme: gdk_colormap_get_system()
     gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
     bg = gdk_gc_new(GTK_WIDGET(plugin)->window);
     gdk_gc_set_foreground(bg, &color);
@@ -289,7 +288,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     color.red = 65535;
     color.green = 0;
     color.blue = 0;
-    // fixme: gdk_colormap_get_system()
     gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
     fg = gdk_gc_new(GTK_WIDGET(plugin)->window);
     gdk_gc_set_foreground(fg, &color);
@@ -297,7 +295,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     color.red = 32768;
     color.green = 32768;
     color.blue = 32768;
-    // fixme: gdk_colormap_get_system()
     gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
     err = gdk_gc_new(GTK_WIDGET(plugin)->window);
     gdk_gc_set_foreground(err, &color);
@@ -312,7 +309,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 10, 10, -1);
     }
     
-    PangoFontDescription *font_desc = pango_font_description_from_string("fixed");
+    PangoFontDescription *font_desc = pango_font_description_from_string("sans 8");
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	gtk_widget_modify_font(work[type].drawable, font_desc);
