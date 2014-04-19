@@ -60,6 +60,17 @@ static struct {
     { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
 };
 
+static void print_hier(GtkWidget *w, gint indent)
+{
+    fprintf(stderr, "%*s%s %dx%d+%d+%d\n",
+	    indent, "", G_OBJECT_TYPE_NAME(w),
+	    w->allocation.width, w->allocation.height,
+	    w->allocation.x, w->allocation.y);
+    GList *list = gtk_container_get_children(GTK_CONTAINER(w));
+    for ( ; list != NULL; list = g_list_next(list))
+	print_hier(GTK_WIDGET(list->data), indent + 2);
+}
+
 static gboolean timer(gpointer data)
 {
     // データを読む
@@ -79,6 +90,8 @@ static gboolean timer(gpointer data)
     
     // widget にコピー
     for (gint type = 0; type < TYPE_NR; type++) {
+	if (!work[type].show)
+	    continue;
 	gdk_draw_drawable(work[type].drawable->window, fg, work[type].pix,
 		0, 0, 0, 0,
 		work[type].drawable->allocation.width, work[type].drawable->allocation.height);
@@ -86,6 +99,8 @@ static gboolean timer(gpointer data)
     
     // label を描画
     for (gint type = 0; type < TYPE_NR; type++) {
+	if (!work[type].show)
+	    continue;
 	gtk_paint_layout(work[type].drawable->style,
 		work[type].drawable->window,
 		GTK_WIDGET_STATE(work[type].drawable),
@@ -100,6 +115,8 @@ static gboolean timer(gpointer data)
     // 余分なデータを捨てる。
     for (gint type = 0; type < TYPE_NR; type++)
 	(*funcs[type].discard_data)(type, work[type].drawable->allocation.width);
+    
+    print_hier(GTK_WIDGET(plugin), 0);
     
     return TRUE;
 }
@@ -148,9 +165,12 @@ static void load_config(void)
     xfce_rc_close(rc);
 }
 
-static void change_size_iter(gint type, gint size)
+static void change_size_iter(gint type, gboolean is_vert, gint size)
 {
-    gtk_widget_set_size_request(work[type].drawable, size, size);
+    if (is_vert)
+	gtk_widget_set_size_request(work[type].drawable, size, -1);
+    else
+	gtk_widget_set_size_request(work[type].drawable, -1, size);
     gtk_widget_queue_resize(work[type].drawable);
     if (work[type].pix != NULL)
 	g_object_unref(work[type].pix);
@@ -161,12 +181,13 @@ static void change_size_iter(gint type, gint size)
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 {
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL)
-	gtk_widget_set_size_request(GTK_WIDGET(plugin), size, -1);
-    else
 	gtk_widget_set_size_request(GTK_WIDGET(plugin), -1, size);
+    else
+	gtk_widget_set_size_request(GTK_WIDGET(plugin), size, -1);
+    gtk_widget_queue_resize(GTK_WIDGET(plugin));
     
     for (gint type = 0; type < TYPE_NR; type++)
-	change_size_iter(type, size);
+	change_size_iter(type, xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL, size);
     
     return FALSE;
 }
@@ -176,9 +197,9 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     GtkWidget *oldbox = box;
     
     if (orientation == GTK_ORIENTATION_HORIZONTAL) {
-	box = gtk_hbox_new(FALSE, 1);
+	box = gtk_hbox_new(FALSE, 0);
     } else {
-	box = gtk_vbox_new(FALSE, 1);
+	box = gtk_vbox_new(FALSE, 0);
     }
     gtk_container_set_border_width(GTK_CONTAINER(box), 1);
     
@@ -283,8 +304,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     xfce_panel_plugin_menu_show_about(plugin);
     xfce_panel_plugin_menu_show_configure(plugin);
     
-    xfce_panel_plugin_set_expand(plugin, TRUE);
-    
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
 	box = gtk_hbox_new(FALSE, 0);
     } else {
@@ -292,21 +311,23 @@ static void plugin_start(XfcePanelPlugin *plg)
     }
     gtk_container_set_border_width(GTK_CONTAINER(box), 1);
     gtk_widget_show(box);
-    gtk_container_add(GTK_CONTAINER(plugin), box);
-    xfce_panel_plugin_add_action_widget(plugin, box);
     
     bg = alloc_color_gc(GTK_WIDGET(plugin)->window, 0, 0, 0);
     fg = alloc_color_gc(GTK_WIDGET(plugin)->window, 65535, 0, 0);
     err = alloc_color_gc(GTK_WIDGET(plugin)->window, 32768, 32768, 32768);
     
+    gtk_container_add(GTK_CONTAINER(plugin), box);
+    xfce_panel_plugin_add_action_widget(plugin, box);
+    
     for (gint type = 0; type < TYPE_NR; type++) {
 	work[type].drawable = gtk_event_box_new();
+	gtk_widget_set_size_request(work[type].drawable, 40, -1);
 	gtk_widget_show(work[type].drawable);
 	gtk_box_pack_start(GTK_BOX(box), work[type].drawable, FALSE, FALSE, 0);
 	xfce_panel_plugin_add_action_widget(plugin, work[type].drawable);
 	work[type].show = TRUE;
 	
-	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 10, 10, -1);
+	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 40, 40, -1);
     }
     
     PangoFontDescription *font_desc = pango_font_description_from_string("sans 8");
@@ -341,8 +362,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     cpufreq_init();
     loadavg_init();
     cpuload_init();
-    
-    timer(NULL);
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)
