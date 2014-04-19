@@ -12,3 +12,9 @@ configure
 .deps
 src/Makefile
 src/Makefile.in
+depcomp
+install-sh
+missing
+multi-monitor.desktop
+src/multi-monitor
+stamp-h1
