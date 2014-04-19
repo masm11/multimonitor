@@ -32,6 +32,7 @@
 static XfcePanelPlugin *plugin;
 static GtkWidget *box;
 static struct {
+    GtkWidget *ev;
     GtkWidget *drawable;
     GdkPixmap *pix;
     PangoLayout *layout;
@@ -66,9 +67,11 @@ static void print_hier(GtkWidget *w, gint indent)
 	    indent, "", G_OBJECT_TYPE_NAME(w),
 	    w->allocation.width, w->allocation.height,
 	    w->allocation.x, w->allocation.y);
-    GList *list = gtk_container_get_children(GTK_CONTAINER(w));
-    for ( ; list != NULL; list = g_list_next(list))
-	print_hier(GTK_WIDGET(list->data), indent + 2);
+    if (GTK_IS_CONTAINER(w)) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(w));
+	for ( ; list != NULL; list = g_list_next(list))
+	    print_hier(GTK_WIDGET(list->data), indent + 2);
+    }
 }
 
 static gboolean timer(gpointer data)
@@ -239,9 +242,9 @@ static void configure_toggled_cb(GtkWidget *btn, gpointer data)
     gint type = GPOINTER_TO_SIZE(data);
     work[type].show = !work[type].show;
     if (work[type].show)
-	gtk_widget_show(work[type].drawable);
+	gtk_widget_show(work[type].ev);
     else
-	gtk_widget_hide(work[type].drawable);
+	gtk_widget_hide(work[type].ev);
 }
 
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
@@ -320,11 +323,15 @@ static void plugin_start(XfcePanelPlugin *plg)
     xfce_panel_plugin_add_action_widget(plugin, box);
     
     for (gint type = 0; type < TYPE_NR; type++) {
-	work[type].drawable = gtk_event_box_new();
-	gtk_widget_set_size_request(work[type].drawable, 40, -1);
+	work[type].ev = gtk_event_box_new();
+	gtk_widget_show(work[type].ev);
+	gtk_box_pack_start(GTK_BOX(box), work[type].ev, FALSE, FALSE, 0);
+	xfce_panel_plugin_add_action_widget(plugin, work[type].ev);
+	
+	work[type].drawable = gtk_drawing_area_new();
+	gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), 40, 40);
 	gtk_widget_show(work[type].drawable);
-	gtk_box_pack_start(GTK_BOX(box), work[type].drawable, FALSE, FALSE, 0);
-	xfce_panel_plugin_add_action_widget(plugin, work[type].drawable);
+	gtk_container_add(GTK_CONTAINER(work[type].ev), work[type].drawable);
 	work[type].show = TRUE;
 	
 	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 40, 40, -1);
@@ -351,9 +358,9 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	if (work[type].show)
-	    gtk_widget_show(work[type].drawable);
+	    gtk_widget_show(work[type].ev);
 	else
-	    gtk_widget_hide(work[type].drawable);
+	    gtk_widget_hide(work[type].ev);
     }
     
     g_timeout_add(1000, timer, NULL);
