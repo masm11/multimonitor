@@ -20,58 +20,63 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include "types.h"
 #include "sysfs.h"
 #include "battery.h"
 
-#define NBATT 2
+#define NCPU 4
 
-static int pow = -1;
+static int dir = -1;
+static int maxfreq[NCPU] = { -1, };
+static GList *list[NCPU] = { NULL, };
 
-static GList *list[NBATT] = { NULL, };
-
-void battery_init(void)
+void cpufreq_init(void)
 {
-    pow = open("/sys/class/power_supply", O_RDONLY);
+    dir = open("/sys/devices/system/cpu", O_RDONLY);
+    
+    for (gint n = 0; n < NCPU; n++)
+	maxfreq[n] = sysfs_read_int(dir, "cpu%d/cpufreq/cpuinfo_max_freq", n);
 }
 
-void battery_read_data(gint type)
+void cpufreq_read_data(gint type)
 {
-    if (pow < 0)
+    if (dir < 0)
 	return;
     
-    int n = (type != TYPE_BATT_0);
+    int n = type - TYPE_CPUFREQ_0;
     
-    int cap = sysfs_read_int(pow, "BAT%d/capacity", n);
+    int freq = sysfs_read_int(dir, "cpu%d/cpufreq/scaling_cur_freq", n);
     
     gint *p = g_new0(gint, 1);
-    *p = cap;
+    *p = freq;
     list[n] = g_list_append(list[n], p);
 }
 
-void battery_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
+void cpufreq_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 {
-    int n = (type != TYPE_BATT_0);
+    int n = (type - TYPE_CPUFREQ_0);
     
-    int cap = -1;
+    int freq = -1;
     
     GList *lp = list[n];
     if (lp != NULL)
-	cap = *(gint *) lp->data;
+	freq = *(gint *) lp->data;
     
     gint w, h;
     gdk_pixmap_get_size(pix, &w, &h);
     
-    if (cap >= 0) {
+    if (freq >= 0) {
 	gdk_draw_line(pix, bg,
 		w - 1, 0,
 		w - 1, h - 1);
 	
 	gdk_draw_line(pix, fg,
-		w - 2, h - h * cap / 100,
+		w - 2, h - h * freq / maxfreq[n],
 		w - 2, h - 1);
     } else {
 	gdk_draw_line(pix, err,

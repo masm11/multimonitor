@@ -5,7 +5,11 @@ multi_monitor_SOURCES = \
     main.c		\
     main.h		\
     about.c		\
-    about.h
+    about.h		\
+    sysfs.c		\
+    sysfs.h		\
+    cpufreq.c		\
+    cpufreq.h
 
 #    preferences.c	\
 #    preferences.h	\

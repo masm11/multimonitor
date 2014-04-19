@@ -5,6 +5,11 @@ enum {
     TYPE_BATT_0,
     TYPE_BATT_1,
     
+    TYPE_CPUFREQ_0,
+    TYPE_CPUFREQ_1,
+    TYPE_CPUFREQ_2,
+    TYPE_CPUFREQ_3,
+    
     TYPE_NR
 };
 

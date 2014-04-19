@@ -24,6 +24,7 @@
 #include "types.h"
 #include "about.h"
 #include "battery.h"
+#include "cpufreq.h"
 #include "main.h"
 
 static XfcePanelPlugin *plugin;
@@ -40,6 +41,10 @@ static struct {
 } funcs[] = {
     { "Battery\nBAT0", battery_read_data, battery_draw_1 },
     { "Battery\nBAT1", battery_read_data, battery_draw_1 },
+    { "CPU Freq\nCPU 0", cpufreq_read_data, cpufreq_draw_1 },
+    { "CPU Freq\nCPU 1", cpufreq_read_data, cpufreq_draw_1 },
+    { "CPU Freq\nCPU 2", cpufreq_read_data, cpufreq_draw_1 },
+    { "CPU Freq\nCPU 3", cpufreq_read_data, cpufreq_draw_1 },
 };
 
 static gboolean timer(gpointer data)
@@ -421,8 +426,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     g_timeout_add(1000, timer, NULL);
     
     battery_init();
-    
-//    gtk_main();
+    cpufreq_init();
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)
