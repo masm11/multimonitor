@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include "types.h"
 #include "sysfs.h"
+#include "list.h"
 #include "battery.h"
 
 #define NBATT 2
