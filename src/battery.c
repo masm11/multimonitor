@@ -73,27 +73,40 @@ void battery_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 {
     int n = (type != TYPE_BATT_0);
     
-    GList *lp = list[n];
-    if (lp == NULL)
-	return;
+    int cap = -1;
     
-    gint x = 0;
-    gint y = 0;
+    GList *lp = list[n];
+    if (lp != NULL)
+	cap = *(gint *) lp->data;
+    
     gint w, h;
     gdk_pixmap_get_size(pix, &w, &h);
     
-    gdk_draw_line(pix, bg,
-	    x + w - 1,
-	    y,
-	    x + w - 1,
-	    y + h - 1);
-    
-    int cap = *(gint *) lp->data;
-    if (cap > 0) {
+    if (cap >= 0) {
+	gdk_draw_line(pix, bg,
+		w - 1,
+		0,
+		w - 1,
+		h - 1);
+	
 	gdk_draw_line(pix, fg,
-		x + w - 2,
-		y + h - h * cap / 100,
-		x + w - 2,
-		y + h - 1);
+		w - 2,
+		h - h * cap / 100,
+		w - 2,
+		h - 1);
+    } else {
+	gdk_draw_line(pix, err,
+		w - 1,
+		0,
+		w - 1,
+		h - 1);
     }
+}
+
+void battery_draw_label(gint type, GtkWidget *label, GdkGC *fg)
+{
+    if (type == TYPE_BATT_0)
+	gtk_label_set_text(GTK_LABEL(label), "Battery\nBAT0");
+    else
+	gtk_label_set_text(GTK_LABEL(label), "Battery\nBAT1");
 }

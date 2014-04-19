@@ -56,7 +56,7 @@ static gboolean timer(gpointer data)
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	gdk_draw_drawable(drawable[type]->window, fg, pix[type],
-		0, 0, drawable[type]->allocation.x, drawable[type]->allocation.y,
+		0, 0, 0, 0,
 		drawable[type]->allocation.width, drawable[type]->allocation.height);
     }
     
@@ -381,7 +381,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	drawable[type] = gtk_drawing_area_new();
-	gtk_drawing_area_size(GTK_DRAWING_AREA(drawable[type]), 40, 40);
+//	gtk_drawing_area_size(GTK_DRAWING_AREA(drawable[type]), 40, 40);
 	gtk_widget_show(drawable[type]);
 	gtk_box_pack_start(GTK_BOX(box), drawable[type], FALSE, FALSE, 0);
     }
