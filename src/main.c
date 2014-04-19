@@ -39,6 +39,7 @@ static struct {
     gboolean show;
 } work[TYPE_NR];
 static GdkGC *bg, *fg, *err;
+static const char *fontname = "sans 8";
 
 static struct {
     const char *label, *sublabel;
@@ -143,6 +144,8 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 	xfce_rc_write_bool_entry(rc, key, work[type].show);
     }
     
+    xfce_rc_write_entry(rc, "fontname", fontname);
+    
     xfce_rc_close(rc);
 }
 
@@ -165,6 +168,8 @@ static void load_config(void)
 	snprintf(key, sizeof key, "show%d", type);
 	work[type].show = xfce_rc_read_bool_entry(rc, key, TRUE);
     }
+    
+    fontname = g_strdup(xfce_rc_read_entry(rc, "fontname", "sans 8"));
     
     xfce_rc_close(rc);
 }
@@ -239,6 +244,27 @@ static void configure_toggled_cb(GtkWidget *btn, gpointer data)
 	gtk_widget_hide(work[type].ev);
 }
 
+static void font_set_cb(GtkWidget *btn, gpointer data)
+{
+    fontname = g_strdup(gtk_font_button_get_font_name(GTK_FONT_BUTTON(btn)));
+    PangoFontDescription *font_desc = pango_font_description_from_string(fontname);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	gtk_widget_modify_font(work[type].drawable, font_desc);
+	char label[128];
+	snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
+	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, label);
+	GdkColor color = {
+	    .red = 0xffff,
+	    .green = 0xffff,
+	    .blue = 0xffff,
+	};
+	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, &color);
+    }
+    
+    pango_font_description_free(font_desc);
+}
+
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 {
     GtkWidget *dialog;
@@ -262,6 +288,18 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 	g_signal_connect(btn, "toggled", G_CALLBACK(configure_toggled_cb), GSIZE_TO_POINTER(type));
 	gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 0);
     }
+    
+    GtkWidget *fbox = gtk_hbox_new(FALSE, 0);
+    GtkWidget *flbl = gtk_label_new("Font:");
+    GtkWidget *fbtn = gtk_font_button_new();
+    gtk_widget_show(fbox);
+    gtk_widget_show(flbl);
+    gtk_widget_show(fbtn);
+    gtk_box_pack_start(GTK_BOX(box), fbox, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(fbox), flbl, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(fbox), fbtn, FALSE, FALSE, 0);
+    gtk_font_button_set_font_name(GTK_FONT_BUTTON(fbtn), fontname);
+    g_signal_connect(G_OBJECT(fbtn), "font-set", G_CALLBACK(font_set_cb), NULL);
     
     gtk_dialog_run(GTK_DIALOG(dialog));
     
@@ -328,7 +366,9 @@ static void plugin_start(XfcePanelPlugin *plg)
 	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 40, 40, -1);
     }
     
-    PangoFontDescription *font_desc = pango_font_description_from_string("sans 8");
+    load_config();
+    
+    PangoFontDescription *font_desc = pango_font_description_from_string(fontname);
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	gtk_widget_modify_font(work[type].drawable, font_desc);
@@ -344,8 +384,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     }
     
     pango_font_description_free(font_desc);
-    
-    load_config();
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	if (work[type].show)
