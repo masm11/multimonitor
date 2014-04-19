@@ -31,9 +31,11 @@
 
 static XfcePanelPlugin *plugin;
 static GtkWidget *box;
-static GtkWidget *drawable[TYPE_NR] = { NULL, };
-static GdkPixmap *pix[TYPE_NR] = { NULL, };
-static PangoLayout *layout[TYPE_NR] = { NULL, };
+static struct {
+    GtkWidget *drawable;
+    GdkPixmap *pix;
+    PangoLayout *layout;
+} work[TYPE_NR];
 static GdkGC *bg, *fg, *err;
 
 static struct {
@@ -41,82 +43,62 @@ static struct {
     void (*read_data)(gint);
     void (*draw_1)(gint, GdkPixmap *, GdkGC *, GdkGC *, GdkGC *);
 } funcs[] = {
-    { "Battery\nBAT0", battery_read_data, battery_draw_1 },
-    { "Battery\nBAT1", battery_read_data, battery_draw_1 },
+    { "Battery\nBAT0",   battery_read_data, battery_draw_1 },
+    { "Battery\nBAT1",   battery_read_data, battery_draw_1 },
     { "CPU Freq\nCPU 0", cpufreq_read_data, cpufreq_draw_1 },
     { "CPU Freq\nCPU 1", cpufreq_read_data, cpufreq_draw_1 },
     { "CPU Freq\nCPU 2", cpufreq_read_data, cpufreq_draw_1 },
     { "CPU Freq\nCPU 3", cpufreq_read_data, cpufreq_draw_1 },
-    { "Loadavg\n1min", loadavg_read_data, loadavg_draw_1 },
-    { "Loadavg\n5min", loadavg_read_data, loadavg_draw_1 },
-    { "Loadavg\n15min", loadavg_read_data, loadavg_draw_1 },
-    { "CPU Load\nCPU0", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load\nCPU1", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load\nCPU2", cpuload_read_data, cpuload_draw_1 },
-    { "CPU Load\nCPU3", cpuload_read_data, cpuload_draw_1 },
+    { "Loadavg\n1min",   loadavg_read_data, loadavg_draw_1 },
+    { "Loadavg\n5min",   loadavg_read_data, loadavg_draw_1 },
+    { "Loadavg\n15min",  loadavg_read_data, loadavg_draw_1 },
+    { "CPU Load\nCPU 0", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load\nCPU 1", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load\nCPU 2", cpuload_read_data, cpuload_draw_1 },
+    { "CPU Load\nCPU 3", cpuload_read_data, cpuload_draw_1 },
 };
 
 static gboolean timer(gpointer data)
 {
+    // データを読む
     for (gint type = 0; type < TYPE_NR; type++)
 	(*funcs[type].read_data)(type);
     
+    // 1dotずらす
     for (gint type = 0; type < TYPE_NR; type++) {
-	gdk_draw_drawable(pix[type], fg, pix[type],
+	gdk_draw_drawable(work[type].pix, fg, work[type].pix,
 		1, 0,
-		0, 0, drawable[type]->allocation.width - 1, drawable[type]->allocation.height);
+		0, 0, work[type].drawable->allocation.width - 1, work[type].drawable->allocation.height);
     }
     
+    // 右端の 1dot を描画
     for (gint type = 0; type < TYPE_NR; type++)
-	(*funcs[type].draw_1)(type, pix[type], bg, fg, err);
+	(*funcs[type].draw_1)(type, work[type].pix, bg, fg, err);
     
+    // widget にコピー
     for (gint type = 0; type < TYPE_NR; type++) {
-	gdk_draw_drawable(drawable[type]->window, fg, pix[type],
+	gdk_draw_drawable(work[type].drawable->window, fg, work[type].pix,
 		0, 0, 0, 0,
-		drawable[type]->allocation.width, drawable[type]->allocation.height);
+		work[type].drawable->allocation.width, work[type].drawable->allocation.height);
     }
     
+    // label を描画
     for (gint type = 0; type < TYPE_NR; type++) {
-	gtk_paint_layout(drawable[type]->style,
-		drawable[type]->window,
-		GTK_WIDGET_STATE(drawable[type]),
+	gtk_paint_layout(work[type].drawable->style,
+		work[type].drawable->window,
+		GTK_WIDGET_STATE(work[type].drawable),
 		TRUE,
 		NULL,	// &event->area,
-		drawable[type],
+		work[type].drawable,
 		"graph",
 		0, 0,
-		layout[type]);
+		work[type].layout);
     }
 
     return TRUE;
 }
 
 #if 0
-GtkWidget *add_graph(GType type, gint subidx)
-{
-    MccDataSource *src = mcc_data_source_new(type, subidx);
-    GtkWidget *g = mcc_graph_new(src->nvalues, src->min, src->max,
-	    src->nfg, src->default_fg, src->nbg, src->default_bg, src->dynamic_scaling,
-	    MCC_DATA_SOURCE_GET_CLASS(src)->label, src->sublabel,
-	    tooltips);
-    g_object_set_data_full(G_OBJECT(g), "mcc-datasrc", src, g_object_unref);
-    
-    int width, height;
-    if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
-	width = 50;
-	height = -1;
-    } else {
-	width = -1;
-	height = 50;
-    }
-    
-    gtk_widget_set_size_request(g, width, height);
-    gtk_widget_show(g);
-    gtk_box_pack_start(GTK_BOX(box), g, FALSE, FALSE, 0);
-    
-    return g;
-}
-
 static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
 {
     XfceRc *rc;
@@ -283,12 +265,12 @@ static void print_hier(int indent, GtkWidget *w)
 
 static void change_size_iter(gint type, gint size)
 {
-    gtk_drawing_area_size(GTK_DRAWING_AREA(drawable[type]), size, size);
-    gtk_widget_queue_resize(drawable[type]);
-    if (pix[type] != NULL)
-	g_object_unref(pix[type]);
-    pix[type] = gdk_pixmap_new(drawable[type]->window, size, size, -1);
-    gdk_draw_rectangle(pix[type], err, TRUE, 0, 0, size, size);
+    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, size);
+    gtk_widget_queue_resize(work[type].drawable);
+    if (work[type].pix != NULL)
+	g_object_unref(work[type].pix);
+    work[type].pix = gdk_pixmap_new(work[type].drawable->window, size, size, -1);
+    gdk_draw_rectangle(work[type].pix, err, TRUE, 0, 0, size, size);
 }
 
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
@@ -408,29 +390,27 @@ static void plugin_start(XfcePanelPlugin *plg)
     gdk_gc_set_foreground(err, &color);
     
     for (gint type = 0; type < TYPE_NR; type++) {
-	drawable[type] = gtk_drawing_area_new();
-	gtk_widget_show(drawable[type]);
-	gtk_box_pack_start(GTK_BOX(box), drawable[type], FALSE, FALSE, 0);
+	work[type].drawable = gtk_drawing_area_new();
+	gtk_widget_show(work[type].drawable);
+	gtk_box_pack_start(GTK_BOX(box), work[type].drawable, FALSE, FALSE, 0);
     }
     
     PangoFontDescription *font_desc = pango_font_description_from_string("fixed");
     
     for (gint type = 0; type < TYPE_NR; type++) {
-	gtk_widget_modify_font(drawable[type], font_desc);
-	layout[type] = gtk_widget_create_pango_layout(drawable[type], funcs[type].label);
+	gtk_widget_modify_font(work[type].drawable, font_desc);
+	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, funcs[type].label);
 	GdkColor color = {
 	    .red = 0xffff,
 	    .green = 0xffff,
 	    .blue = 0xffff,
 	};
-	gtk_widget_modify_text(drawable[type], GTK_STATE_NORMAL, &color);
+	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, &color);
     }
     
     pango_font_description_free(font_desc);
     
     //load_config();
-    
-    GList *list = gtk_container_get_children(GTK_CONTAINER(box));
     
     g_timeout_add(1000, timer, NULL);
     
