@@ -63,10 +63,11 @@ static struct {
 
 static void print_hier(GtkWidget *w, gint indent)
 {
-    fprintf(stderr, "%*s%s %dx%d+%d+%d\n",
+    fprintf(stderr, "%*s%s %dx%d+%d+%d %s window\n",
 	    indent, "", G_OBJECT_TYPE_NAME(w),
 	    w->allocation.width, w->allocation.height,
-	    w->allocation.x, w->allocation.y);
+	    w->allocation.x, w->allocation.y,
+	    gtk_widget_get_has_window(w) ? "has" : "no");
     if (GTK_IS_CONTAINER(w)) {
 	GList *list = gtk_container_get_children(GTK_CONTAINER(w));
 	for ( ; list != NULL; list = g_list_next(list))
@@ -119,7 +120,7 @@ static gboolean timer(gpointer data)
     for (gint type = 0; type < TYPE_NR; type++)
 	(*funcs[type].discard_data)(type, work[type].drawable->allocation.width);
     
-    print_hier(GTK_WIDGET(plugin), 0);
+    // print_hier(GTK_WIDGET(plugin), 0);
     
     return TRUE;
 }
@@ -183,7 +184,7 @@ static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
     for (gint type = 0; type < TYPE_NR; type++)
 	change_size_iter(type, xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL, size);
     
-    return FALSE;
+    return TRUE;
 }
 
 static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation, gpointer closure)
