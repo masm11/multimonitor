@@ -9,7 +9,9 @@ multi_monitor_SOURCES = \
     sysfs.c		\
     sysfs.h		\
     cpufreq.c		\
-    cpufreq.h
+    cpufreq.h		\
+    loadavg.c		\
+    loadavg.h
 
 #    preferences.c	\
 #    preferences.h	\
