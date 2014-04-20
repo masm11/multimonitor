@@ -20,8 +20,8 @@ multi_monitor_SOURCES = \
     net.h		\
     list.c		\
     list.h		\
-    line.c		\
-    line.h
+    draw.c		\
+    draw.h
 
 #    preferences.c	\
 #    preferences.h	\
