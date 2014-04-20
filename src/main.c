@@ -88,6 +88,32 @@ static void print_hier(GtkWidget *w, gint indent)
 }
 #endif
 
+static void draw_to_widget(gint type)
+{
+    if (!work[type].show)
+	return;
+    if (work[type].drawable->window == NULL)
+	return;
+    
+    // widget にコピー
+    cairo_t *dst = gdk_cairo_create(work[type].drawable->window);
+    gdk_cairo_set_source_pixbuf(dst, work[type].pix, 0, 0);
+    cairo_rectangle(dst, 0, 0, work[type].drawable->allocation.width, work[type].drawable->allocation.height);
+    cairo_fill(dst);
+    cairo_destroy(dst);
+    
+    // label を描画
+    gtk_paint_layout(work[type].drawable->style,
+	    work[type].drawable->window,
+	    GTK_WIDGET_STATE(work[type].drawable),
+	    TRUE,
+	    NULL,	// &event->area,
+	    work[type].drawable,
+	    "graph",
+	    0, 0,
+	    work[type].layout);
+}
+
 static gboolean timer(gpointer data)
 {
     // データを読む
@@ -103,41 +129,24 @@ static gboolean timer(gpointer data)
     for (gint type = 0; type < TYPE_NR; type++)
 	(*funcs[type].draw_1)(type, work[type].pix, &bg, &fg, &err);
     
-    // widget にコピー
-    for (gint type = 0; type < TYPE_NR; type++) {
-	if (!work[type].show)
-	    continue;
-	if (work[type].drawable->window == NULL)
-	    continue;
-	
-	cairo_t *dst = gdk_cairo_create(work[type].drawable->window);
-	gdk_cairo_set_source_pixbuf(dst, work[type].pix, 0, 0);
-	cairo_rectangle(dst, 0, 0, work[type].drawable->allocation.width, work[type].drawable->allocation.height);
-	cairo_fill(dst);
-	cairo_destroy(dst);
-    }
-    
-    // label を描画
-    for (gint type = 0; type < TYPE_NR; type++) {
-	if (!work[type].show)
-	    continue;
-	
-	gtk_paint_layout(work[type].drawable->style,
-		work[type].drawable->window,
-		GTK_WIDGET_STATE(work[type].drawable),
-		TRUE,
-		NULL,	// &event->area,
-		work[type].drawable,
-		"graph",
-		0, 0,
-		work[type].layout);
-    }
+    // widget に描画
+    for (gint type = 0; type < TYPE_NR; type++)
+	draw_to_widget(type);
     
     // 余分なデータを捨てる。
     for (gint type = 0; type < TYPE_NR; type++)
 	(*funcs[type].discard_data)(type, work[type].drawable->allocation.width);
     
     // print_hier(GTK_WIDGET(plugin), 0);
+    
+    return TRUE;
+}
+
+static gboolean expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer user_data)
+{
+    gint type = GPOINTER_TO_SIZE(user_data);
+    
+    draw_to_widget(type);
     
     return TRUE;
 }
@@ -381,6 +390,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 	gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), 40, 40);
 	gtk_widget_show(work[type].drawable);
 	gtk_container_add(GTK_CONTAINER(work[type].ev), work[type].drawable);
+	g_signal_connect(work[type].drawable, "expose-event", G_CALLBACK(expose_cb), GSIZE_TO_POINTER(type));
 	
 	if (work[type].show)
 	    gtk_widget_show(work[type].ev);
