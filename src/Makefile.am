@@ -1,13 +1,15 @@
 pkglibexec_PROGRAMS = multi-monitor
 
 multi_monitor_SOURCES = \
-    battery.c		\
     main.c		\
     main.h		\
+    types.h		\
     about.c		\
     about.h		\
     sysfs.c		\
     sysfs.h		\
+    battery.c		\
+    battery.h		\
     cpufreq.c		\
     cpufreq.h		\
     loadavg.c		\
