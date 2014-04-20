@@ -88,10 +88,6 @@ static gboolean timer(gpointer data)
     
     // 1dotずらす
     for (gint type = 0; type < TYPE_NR; type++) {
-	if (!work[type].show)
-	    continue;
-	if (work[type].pix == NULL)
-	    continue;
 	guchar *pixels = gdk_pixbuf_get_pixels(work[type].pix);
 	gint rowstride = gdk_pixbuf_get_rowstride(work[type].pix);
 	gint nch = gdk_pixbuf_get_n_channels(work[type].pix);
@@ -106,11 +102,8 @@ static gboolean timer(gpointer data)
     }
     
     // 右端の 1dot を描画
-    for (gint type = 0; type < TYPE_NR; type++) {
-	if (!work[type].show)
-	    continue;
+    for (gint type = 0; type < TYPE_NR; type++)
 	(*funcs[type].draw_1)(type, work[type].pix, &bg, &fg, &err);
-    }
     
     // widget にコピー
     for (gint type = 0; type < TYPE_NR; type++) {
@@ -118,8 +111,7 @@ static gboolean timer(gpointer data)
 	    continue;
 	if (work[type].drawable->window == NULL)
 	    continue;
-	if (work[type].pix == NULL)
-	    continue;
+	
 	cairo_t *dst = gdk_cairo_create(work[type].drawable->window);
 	gdk_cairo_set_source_pixbuf(dst, work[type].pix, 0, 0);
 	cairo_rectangle(dst, 0, 0, work[type].drawable->allocation.width, work[type].drawable->allocation.height);
@@ -131,6 +123,7 @@ static gboolean timer(gpointer data)
     for (gint type = 0; type < TYPE_NR; type++) {
 	if (!work[type].show)
 	    continue;
+	
 	gtk_paint_layout(work[type].drawable->style,
 		work[type].drawable->window,
 		GTK_WIDGET_STATE(work[type].drawable),
@@ -199,18 +192,13 @@ static void load_config(void)
     xfce_rc_close(rc);
 }
 
-static void change_size_iter(gint type, gboolean is_vert, gint size)
+static void change_size_iter(gint type, gint size)
 {
     gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, size);
     gtk_widget_queue_resize(work[type].drawable);
-    if (work[type].pix != NULL) {
+    
+    if (work[type].pix != NULL)
 	g_object_unref(work[type].pix);
-	work[type].pix = NULL;
-    }
-    
-    if (!work[type].show)
-	return;
-    
     work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, size);
     
     guchar *pixels = gdk_pixbuf_get_pixels(work[type].pix);
@@ -221,7 +209,7 @@ static void change_size_iter(gint type, gboolean is_vert, gint size)
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 {
     for (gint type = 0; type < TYPE_NR; type++)
-	change_size_iter(type, xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL, size);
+	change_size_iter(type, size);
     
     return TRUE;
 }
