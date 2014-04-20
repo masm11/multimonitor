@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include "types.h"
 #include "list.h"
+#include "line.h"
 #include "cpuload.h"
 
 #define NCPU 4
@@ -87,7 +88,7 @@ void cpuload_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
-void cpuload_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
+void cpuload_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
 {
     int n = (type - TYPE_CPULOAD_0);
     
@@ -97,21 +98,14 @@ void cpuload_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
     if (lp != NULL)
 	load = *(gdouble *) lp->data;
     
-    gint w, h;
-    gdk_pixmap_get_size(pix, &w, &h);
+    gint w = gdk_pixbuf_get_width(pix);
+    gint h = gdk_pixbuf_get_height(pix);
     
     if (load >= 0) {
-	gdk_draw_line(pix, bg,
-		w - 1, 0,
-		w - 1, h - 1);
-	
-	gdk_draw_line(pix, fg,
-		w - 1, h - h * load,
-		w - 1, h - 1);
+	draw_line(pix, w - 1, 0, h - 1, bg);
+	draw_line(pix, w - 1, h - h * load, h - 1, fg);
     } else {
-	gdk_draw_line(pix, err,
-		w - 1, 0,
-		w - 1, h - 1);
+	draw_line(pix, w - 1, 0, h - 1, err);
     }
 }
 

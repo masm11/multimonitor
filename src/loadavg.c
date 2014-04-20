@@ -26,8 +26,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <cairo.h>
 #include "types.h"
 #include "list.h"
+#include "line.h"
 #include "loadavg.h"
 
 #define NAVG 3
@@ -75,14 +77,14 @@ void loadavg_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
-void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
+void loadavg_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
 {
     int n = (type - TYPE_LOADAVG_1);
     
     gdouble level = 1;
     
-    gint w, h;
-    gdk_pixmap_get_size(pix, &w, &h);
+    gint w = gdk_pixbuf_get_width(pix);
+    gint h = gdk_pixbuf_get_height(pix);
     
     for (GList *lp = list[n]; lp != NULL; lp = g_list_next(lp)) {
 	gdouble this_load = *(gdouble *) lp->data;
@@ -96,29 +98,19 @@ void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 	gdouble load = *(gdouble *) lp->data;
 	
 	if (load >= 0) {
-	    gdk_draw_line(pix, bg,
-		    x, 0,
-		    x, h - 1);
-	    gdk_draw_line(pix, fg,
-		    x, h - h * load / level,
-		    x, h - 1);
+	    draw_line(pix, x, 0, h - 1, bg);
+	    draw_line(pix, x, h - h * load / level, h - 1, fg);
+	    
 	    for (gint i = 1; i < level; i++) {
-		gdk_draw_line(pix, err,
-			x, h - h * i / level,
-			x, h - h * i / level);
+		draw_line(pix, x, h - h * i / level, h - h * i / level, err);
 	    }
 	} else {
-	    gdk_draw_line(pix, err,
-		    x, 0,
-		    x, h - 1);
+	    draw_line(pix, x, 0, h - 1, err);
 	}
     }
     
-    for ( ; x >= 0; x--) {
-	gdk_draw_line(pix, err,
-		x, 0,
-		x, h - 1);
-    }
+    for ( ; x >= 0; x--)
+	draw_line(pix, x, 0, h - 1, err);
 }
 
 void loadavg_discard_data(gint type, gint size)

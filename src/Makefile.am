@@ -15,7 +15,9 @@ multi_monitor_SOURCES = \
     cpuload.c		\
     cpuload.h		\
     list.c		\
-    list.h
+    list.h		\
+    line.c		\
+    line.h
 
 #    preferences.c	\
 #    preferences.h	\

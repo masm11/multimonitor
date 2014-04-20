@@ -20,6 +20,7 @@
 #include <gtk/gtk.h>
 #include <libxfce4util/libxfce4util.h>
 #include <libxfce4panel/xfce-panel-plugin.h>
+#include <cairo.h>
 #include "types.h"
 #include "about.h"
 #include "battery.h"
@@ -33,17 +34,18 @@ static GtkWidget *box;
 static struct {
     GtkWidget *ev;
     GtkWidget *drawable;
-    GdkPixmap *pix;
+    GdkPixbuf *pix;
+    cairo_t *cr;
     PangoLayout *layout;
     gboolean show;
 } work[TYPE_NR];
-static GdkGC *bg, *fg, *err;
+static GdkColor bg, fg, err;
 static const char *fontname = "sans 8";
 
 static struct {
     const char *label, *sublabel;
     void (*read_data)(gint);
-    void (*draw_1)(gint, GdkPixmap *, GdkGC *, GdkGC *, GdkGC *);
+    void (*draw_1)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
     void (*discard_data)(gint, gint);
 } funcs[] = {
     { "Battery",  "BAT0",  battery_read_data, battery_draw_1, battery_discard_data },
@@ -80,27 +82,49 @@ static void print_hier(GtkWidget *w, gint indent)
 static gboolean timer(gpointer data)
 {
     // データを読む
-    for (gint type = 0; type < TYPE_NR; type++)
+    for (gint type = 0; type < TYPE_NR; type++) {
 	(*funcs[type].read_data)(type);
+    }
     
     // 1dotずらす
     for (gint type = 0; type < TYPE_NR; type++) {
-	gdk_draw_drawable(work[type].pix, fg, work[type].pix,
-		1, 0,
-		0, 0, work[type].drawable->allocation.width - 1, work[type].drawable->allocation.height);
+	if (!work[type].show)
+	    continue;
+	if (work[type].pix == NULL)
+	    continue;
+	guchar *pixels = gdk_pixbuf_get_pixels(work[type].pix);
+	gint rowstride = gdk_pixbuf_get_rowstride(work[type].pix);
+	gint nch = gdk_pixbuf_get_n_channels(work[type].pix);
+	guchar *dst = pixels;
+	guchar *src = dst + nch;
+	guint len = nch * (gdk_pixbuf_get_width(work[type].pix) - 1);
+	for (gint y = 0; y < gdk_pixbuf_get_height(work[type].pix); y++) {
+	    memmove(dst, src, len);
+	    src += rowstride;
+	    dst += rowstride;
+	}
     }
     
     // 右端の 1dot を描画
-    for (gint type = 0; type < TYPE_NR; type++)
-	(*funcs[type].draw_1)(type, work[type].pix, bg, fg, err);
+    for (gint type = 0; type < TYPE_NR; type++) {
+	if (!work[type].show)
+	    continue;
+	(*funcs[type].draw_1)(type, work[type].pix, &bg, &fg, &err);
+    }
     
     // widget にコピー
     for (gint type = 0; type < TYPE_NR; type++) {
 	if (!work[type].show)
 	    continue;
-	gdk_draw_drawable(work[type].drawable->window, fg, work[type].pix,
-		0, 0, 0, 0,
-		work[type].drawable->allocation.width, work[type].drawable->allocation.height);
+	if (work[type].drawable->window == NULL)
+	    continue;
+	if (work[type].pix == NULL)
+	    continue;
+	cairo_t *dst = gdk_cairo_create(work[type].drawable->window);
+	gdk_cairo_set_source_pixbuf(dst, work[type].pix, 0, 0);
+	cairo_rectangle(dst, 0, 0, work[type].drawable->allocation.width, work[type].drawable->allocation.height);
+	cairo_fill(dst);
+	cairo_destroy(dst);
     }
     
     // label を描画
@@ -179,10 +203,19 @@ static void change_size_iter(gint type, gboolean is_vert, gint size)
 {
     gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, size);
     gtk_widget_queue_resize(work[type].drawable);
-    if (work[type].pix != NULL)
+    if (work[type].pix != NULL) {
 	g_object_unref(work[type].pix);
-    work[type].pix = gdk_pixmap_new(work[type].drawable->window, size, size, -1);
-    gdk_draw_rectangle(work[type].pix, err, TRUE, 0, 0, size, size);
+	work[type].pix = NULL;
+    }
+    
+    if (!work[type].show)
+	return;
+    
+    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, size);
+    
+    guchar *pixels = gdk_pixbuf_get_pixels(work[type].pix);
+    gint rowstride = gdk_pixbuf_get_rowstride(work[type].pix);
+    memset(pixels, 0x80, rowstride * size);
 }
 
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
@@ -318,20 +351,6 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     save_config_cb(plugin, NULL);
 }
 
-static GdkGC *alloc_color_gc(GdkWindow *win, guint16 r, guint16 g, guint16 b)
-{
-    GdkColor color = {
-	.red = r,
-	.green = g,
-	.blue = b,
-    };
-    gdk_colormap_alloc_color(gdk_colormap_get_system(), &color, FALSE, TRUE);
-    GdkGC *gc = gdk_gc_new(win);
-    gdk_gc_set_foreground(gc, &color);
-    
-    return gc;
-}
-
 static void plugin_start(XfcePanelPlugin *plg)
 {
     plugin = plg;
@@ -357,9 +376,9 @@ static void plugin_start(XfcePanelPlugin *plg)
     gtk_container_add(GTK_CONTAINER(plugin), box);
     xfce_panel_plugin_add_action_widget(plugin, box);
     
-    bg = alloc_color_gc(GTK_WIDGET(plugin)->window, 0, 0, 0);
-    fg = alloc_color_gc(GTK_WIDGET(plugin)->window, 65535, 0, 0);
-    err = alloc_color_gc(GTK_WIDGET(plugin)->window, 32768, 32768, 32768);
+    bg = (GdkColor) { 0, 0, 0, 0 };
+    fg = (GdkColor) { 0, 65535, 0, 0 };
+    err = (GdkColor) { 0, 32768, 32768, 32768 };
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	work[type].ev = gtk_event_box_new();
@@ -373,7 +392,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 	gtk_container_add(GTK_CONTAINER(work[type].ev), work[type].drawable);
 	work[type].show = TRUE;
 	
-	work[type].pix = gdk_pixmap_new(work[type].drawable->window, 40, 40, -1);
+	work[type].pix = gdk_pixbuf_get_from_drawable(NULL, work[type].drawable->window, NULL, 0, 0, 0, 0, 40, 40);
     }
     
     load_config();
