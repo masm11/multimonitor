@@ -380,7 +380,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 	gtk_container_add(GTK_CONTAINER(work[type].ev), work[type].drawable);
 	work[type].show = TRUE;
 	
-	work[type].pix = gdk_pixbuf_get_from_drawable(NULL, work[type].drawable->window, NULL, 0, 0, 0, 0, 40, 40);
+	work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 40, 40);
     }
     
     load_config();
