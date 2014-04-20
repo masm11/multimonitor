@@ -31,11 +31,11 @@
 #include "cpuload.h"
 
 #define NCPU 4
-#define NDATA 8
+#define NDATA 10
 
 static int dir = -1;
 static GList *list[NCPU] = { NULL, };
-static gint olddata[NCPU][NDATA];
+static guint64 olddata[NCPU][NDATA];
 
 void cpuload_init(void)
 {
@@ -59,13 +59,13 @@ void cpuload_read_data(gint type)
 	char name[32];
 	
 	while (!feof(fp)) {
-	    gint data[NDATA];
-	    if (fscanf(fp, "%s %d %d %d %d %d %d %d %d",
+	    guint64 data[NDATA];
+	    if (fscanf(fp, "%s %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT" %"G_GUINT64_FORMAT"",
 			    name,
-			    &data[0], &data[1], &data[2], &data[3], &data[4], &data[5], &data[6], &data[7]) == 9) {
+			    &data[0], &data[1], &data[2], &data[3], &data[4], &data[5], &data[6], &data[7], &data[8], &data[9]) == 11) {
 		if (strcmp(name, wanted) == 0) {
-		    gint busy = 0;
-		    gint idle = 0;
+		    guint64 busy = 0;
+		    guint64 idle = 0;
 		    for (gint i = 0; i < NDATA; i++) {
 			if (i != 3)
 			    busy += data[i] - olddata[n][i];
