@@ -106,8 +106,8 @@ void cpuload_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 		w - 1, h - 1);
 	
 	gdk_draw_line(pix, fg,
-		w - 2, h - h * load,
-		w - 2, h - 1);
+		w - 1, h - h * load,
+		w - 1, h - 1);
     } else {
 	gdk_draw_line(pix, err,
 		w - 1, 0,

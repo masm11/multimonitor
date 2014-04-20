@@ -199,11 +199,11 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     GtkWidget *oldbox = box;
     
     if (orientation == GTK_ORIENTATION_HORIZONTAL) {
-	box = gtk_hbox_new(FALSE, 0);
+	box = gtk_hbox_new(FALSE, 1);
     } else {
-	box = gtk_vbox_new(FALSE, 0);
+	box = gtk_vbox_new(FALSE, 1);
     }
-    gtk_container_set_border_width(GTK_CONTAINER(box), 1);
+    gtk_container_set_border_width(GTK_CONTAINER(box), 0);
     
     gtk_widget_show(box);
     
@@ -349,11 +349,11 @@ static void plugin_start(XfcePanelPlugin *plg)
     xfce_panel_plugin_menu_show_configure(plugin);
     
     if (xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_HORIZONTAL) {
-	box = gtk_hbox_new(FALSE, 0);
+	box = gtk_hbox_new(FALSE, 1);
     } else {
-	box = gtk_vbox_new(FALSE, 0);
+	box = gtk_vbox_new(FALSE, 1);
     }
-    gtk_container_set_border_width(GTK_CONTAINER(box), 1);
+    gtk_container_set_border_width(GTK_CONTAINER(box), 0);
     gtk_widget_show(box);
     gtk_container_add(GTK_CONTAINER(plugin), box);
     xfce_panel_plugin_add_action_widget(plugin, box);

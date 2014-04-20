@@ -96,12 +96,12 @@ void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 		w - 1, h - 1);
 	
 	gdk_draw_line(pix, fg,
-		w - 2, h - h * load / level,
-		w - 2, h - 1);
+		w - 1, h - h * load / level,
+		w - 1, h - 1);
 	
 	for (gint i = 1; i < level; i++) {
 	    gdk_draw_line(pix, err,
-		    w - 2, h - h * i / level,
+		    w - 1, h - h * i / level,
 		    w - 1, h - h * i / level);
 	}
 	
