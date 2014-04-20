@@ -107,8 +107,8 @@ void net_read_data(gint type)
 	p->logrx = -1;
 	p->logtx = -1;
     } else {
-	p->logrx = log(rx) / log(1024);
-	p->logtx = log(tx) / log(1024);
+	p->logrx = log(rx * 8) / log(1024);
+	p->logtx = log(tx * 8) / log(1024);
 	if (p->logrx < 0)
 	    p->logrx = 0;
 	if (p->logtx < 0)
