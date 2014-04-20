@@ -121,6 +121,12 @@ void net_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor 
 {
     int n = (type - TYPE_NET_ETH0);
     
+    GdkColor fg2 = {
+	.red = 0,
+	.green = 65535,
+	.blue = 0,
+    };
+    
     gdouble level = 1;
     
     gint w = gdk_pixbuf_get_width(pix);
@@ -143,12 +149,12 @@ void net_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor 
 	if (p->logrx >= 0 && p->logtx >= 0) {
 	    draw_line(pix, x, 0, h - 1, bg);
 	    draw_line(pix, x, h / 2 - h * p->logtx / level / 2, h / 2, fg);
-	    draw_line(pix, x, h / 2, h / 2 + h * p->logrx / level / 2, fg);
+	    draw_line(pix, x, h / 2, h / 2 + h * p->logrx / level / 2, &fg2);
 	    
 	    for (gint i = 0; i < level; i++)
-		draw_line(pix, x, h / 2 - h * i / level / 2, h / 2 - h * i / level / 2, err);
+		draw_point(pix, x, h / 2 - h * i / level / 2, err);
 	    for (gint i = 0; i < level; i++)
-		draw_line(pix, x, h / 2 + h * i / level / 2, h / 2 + h * i / level / 2, err);
+		draw_point(pix, x, h / 2 + h * i / level / 2, err);
 	} else {
 	    draw_line(pix, x, 0, h - 1, err);
 	}

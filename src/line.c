@@ -33,3 +33,15 @@ void draw_line(GdkPixbuf *pix,
 	p += rowstride;
     }
 }
+
+void draw_point(GdkPixbuf *pix,
+	gint x, gint y,
+	GdkColor *color)
+{
+    guint rowstride = gdk_pixbuf_get_rowstride(pix);
+    guchar *p = gdk_pixbuf_get_pixels(pix) + rowstride * y + x * gdk_pixbuf_get_n_channels(pix);
+    
+    p[0] = color->red >> 8;
+    p[1] = color->green >> 8;
+    p[2] = color->blue >> 8;
+}

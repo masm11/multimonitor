@@ -45,7 +45,7 @@ void battery_read_data(gint type)
     if (pow < 0)
 	return;
     
-    int n = (type != TYPE_BATT_0);
+    int n = type - TYPE_BATT_0;
     
     int cap = sysfs_read_int(pow, "BAT%d/capacity", n);
     
@@ -56,7 +56,7 @@ void battery_read_data(gint type)
 
 void battery_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
 {
-    int n = (type != TYPE_BATT_0);
+    int n = type - TYPE_BATT_0;
     
     int cap = -1;
     
@@ -77,6 +77,6 @@ void battery_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkCo
 
 void battery_discard_data(gint type, gint size)
 {
-    int n = (type != TYPE_BATT_0);
+    int n = type - TYPE_BATT_0;
     list[n] = list_truncate(list[n], size);
 }
