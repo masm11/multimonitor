@@ -79,36 +79,45 @@ void loadavg_draw_1(gint type, GdkPixmap *pix, GdkGC *bg, GdkGC *fg, GdkGC *err)
 {
     int n = (type - TYPE_LOADAVG_1);
     
-    double load = -1;
-    
-    GList *lp = list[n];
-    if (lp != NULL)
-	load = *(gdouble *) lp->data;
+    gdouble level = 1;
     
     gint w, h;
     gdk_pixmap_get_size(pix, &w, &h);
     
-    if (load >= 0) {
-	gdouble level = ceil(load);
+    for (GList *lp = list[n]; lp != NULL; lp = g_list_next(lp)) {
+	gdouble this_load = *(gdouble *) lp->data;
+	gdouble this_level = ceil(this_load);
+	if (this_level > level)
+	    level = this_level;
+    }
+    
+    gint x = w - 1;
+    for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
+	gdouble load = *(gdouble *) lp->data;
 	
-	gdk_draw_line(pix, bg,
-		w - 1, 0,
-		w - 1, h - 1);
-	
-	gdk_draw_line(pix, fg,
-		w - 1, h - h * load / level,
-		w - 1, h - 1);
-	
-	for (gint i = 1; i < level; i++) {
+	if (load >= 0) {
+	    gdk_draw_line(pix, bg,
+		    x, 0,
+		    x, h - 1);
+	    gdk_draw_line(pix, fg,
+		    x, h - h * load / level,
+		    x, h - 1);
+	    for (gint i = 1; i < level; i++) {
+		gdk_draw_line(pix, err,
+			x, h - h * i / level,
+			x, h - h * i / level);
+	    }
+	} else {
 	    gdk_draw_line(pix, err,
-		    w - 1, h - h * i / level,
-		    w - 1, h - h * i / level);
+		    x, 0,
+		    x, h - 1);
 	}
-	
-    } else {
+    }
+    
+    for ( ; x >= 0; x--) {
 	gdk_draw_line(pix, err,
-		w - 1, 0,
-		w - 1, h - 1);
+		x, 0,
+		x, h - 1);
     }
 }
 
