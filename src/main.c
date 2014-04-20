@@ -41,7 +41,7 @@ static struct {
     gboolean show;
 } work[TYPE_NR];
 static GdkColor bg, fg, err;
-static const char *fontname = "sans 8";
+static char *fontname;
 
 static struct {
     const char *label, *sublabel;
@@ -178,6 +178,10 @@ static void load_config(void)
 {
     XfceRc *rc;
     
+    for (gint type = 0; type < TYPE_NR; type++)
+	work[type].show = TRUE;
+    fontname = g_strdup("sans 8");
+    
     gchar *rcfile = xfce_panel_plugin_save_location(plugin, FALSE);
     if (rcfile == NULL)
 	return;
@@ -194,6 +198,7 @@ static void load_config(void)
 	work[type].show = xfce_rc_read_bool_entry(rc, key, TRUE);
     }
     
+    g_free(fontname);
     fontname = g_strdup(xfce_rc_read_entry(rc, "fontname", "sans 8"));
     
     xfce_rc_close(rc);
@@ -275,6 +280,7 @@ static void configure_toggled_cb(GtkWidget *btn, gpointer data)
 
 static void font_set_cb(GtkWidget *btn, gpointer data)
 {
+    g_free(fontname);
     fontname = g_strdup(gtk_font_button_get_font_name(GTK_FONT_BUTTON(btn)));
     PangoFontDescription *font_desc = pango_font_description_from_string(fontname);
     
@@ -371,13 +377,14 @@ static void plugin_start(XfcePanelPlugin *plg)
     gtk_container_add(GTK_CONTAINER(plugin), box);
     xfce_panel_plugin_add_action_widget(plugin, box);
     
-    bg = (GdkColor) { 0, 0, 0, 0 };
-    fg = (GdkColor) { 0, 65535, 0, 0 };
-    err = (GdkColor) { 0, 32768, 32768, 32768 };
+    bg = (GdkColor) { .red = 0, .green = 0, .blue = 0 };
+    fg = (GdkColor) { .red = 65535, .green = 0, .blue = 0 };
+    err = (GdkColor) { .red = 32768, .green = 32768, .blue = 32768 };
+    
+    load_config();
     
     for (gint type = 0; type < TYPE_NR; type++) {
 	work[type].ev = gtk_event_box_new();
-	gtk_widget_show(work[type].ev);
 	gtk_box_pack_start(GTK_BOX(box), work[type].ev, FALSE, FALSE, 0);
 	xfce_panel_plugin_add_action_widget(plugin, work[type].ev);
 	
@@ -385,12 +392,14 @@ static void plugin_start(XfcePanelPlugin *plg)
 	gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), 40, 40);
 	gtk_widget_show(work[type].drawable);
 	gtk_container_add(GTK_CONTAINER(work[type].ev), work[type].drawable);
-	work[type].show = TRUE;
+	
+	if (work[type].show)
+	    gtk_widget_show(work[type].ev);
+	else
+	    gtk_widget_hide(work[type].ev);
 	
 	work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 40, 40);
     }
-    
-    load_config();
     
     PangoFontDescription *font_desc = pango_font_description_from_string(fontname);
     
@@ -408,13 +417,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     }
     
     pango_font_description_free(font_desc);
-    
-    for (gint type = 0; type < TYPE_NR; type++) {
-	if (work[type].show)
-	    gtk_widget_show(work[type].ev);
-	else
-	    gtk_widget_hide(work[type].ev);
-    }
     
     g_timeout_add(1000, timer, NULL);
     
