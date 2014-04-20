@@ -80,6 +80,29 @@ void cpufreq_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkCo
     }
 }
 
+void cpufreq_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+{
+    int n = (type - TYPE_CPUFREQ_0);
+    
+    gint w = gdk_pixbuf_get_width(pix);
+    gint h = gdk_pixbuf_get_height(pix);
+    
+    gint x = w - 1;
+    for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
+	gint freq = *(gint *) lp->data;
+	
+	if (freq >= 0) {
+	    draw_line(pix, x, 0, h - 1, bg);
+	    draw_line(pix, x, h - h * freq / maxfreq[n], h - 1, fg);
+	} else {
+	    draw_line(pix, x, 0, h - 1, err);
+	}
+    }
+    
+    for ( ; x >= 0; x--)
+	draw_line(pix, x, 0, h - 1, err);
+}
+
 void cpufreq_discard_data(gint type, gint size)
 {
     int n = (type - TYPE_CPUFREQ_0);

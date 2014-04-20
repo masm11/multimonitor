@@ -48,27 +48,28 @@ static struct {
     const char *label, *sublabel;
     void (*read_data)(gint);
     void (*draw_1)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
+    void (*draw_all)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
     void (*discard_data)(gint, gint);
 } funcs[] = {
-    { "Battery",  "BAT0",  battery_read_data, battery_draw_1, battery_discard_data },
-    { "Battery",  "BAT1",  battery_read_data, battery_draw_1, battery_discard_data },
-    { "CPU Freq", "CPU 0", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
-    { "CPU Freq", "CPU 1", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
-    { "CPU Freq", "CPU 2", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
-    { "CPU Freq", "CPU 3", cpufreq_read_data, cpufreq_draw_1, cpufreq_discard_data },
-    { "Loadavg",  "1min",  loadavg_read_data, loadavg_draw_1, loadavg_discard_data },
-    { "Loadavg",  "5min",  loadavg_read_data, loadavg_draw_1, loadavg_discard_data },
-    { "Loadavg",  "15min", loadavg_read_data, loadavg_draw_1, loadavg_discard_data },
-    { "CPU Load", "CPU 0", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
-    { "CPU Load", "CPU 1", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
-    { "CPU Load", "CPU 2", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
-    { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
-    { "Network",  "eth0",  net_read_data,     net_draw_1,     net_discard_data },
-    { "Network",  "eth1",  net_read_data,     net_draw_1,     net_discard_data },
-    { "Network",  "eth2",  net_read_data,     net_draw_1,     net_discard_data },
-    { "Network",  "wlan0", net_read_data,     net_draw_1,     net_discard_data },
-    { "Network",  "ath0",  net_read_data,     net_draw_1,     net_discard_data },
-    { "Network",  "lo",    net_read_data,     net_draw_1,     net_discard_data },
+    { "Battery",  "BAT0",  battery_read_data, battery_draw_1, battery_draw_all, battery_discard_data },
+    { "Battery",  "BAT1",  battery_read_data, battery_draw_1, battery_draw_all, battery_discard_data },
+    { "CPU Freq", "CPU 0", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
+    { "CPU Freq", "CPU 1", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
+    { "CPU Freq", "CPU 2", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
+    { "CPU Freq", "CPU 3", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
+    { "Loadavg",  "1min",  loadavg_read_data, loadavg_draw_1, loadavg_draw_all, loadavg_discard_data },
+    { "Loadavg",  "5min",  loadavg_read_data, loadavg_draw_1, loadavg_draw_all, loadavg_discard_data },
+    { "Loadavg",  "15min", loadavg_read_data, loadavg_draw_1, loadavg_draw_all, loadavg_discard_data },
+    { "CPU Load", "CPU 0", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
+    { "CPU Load", "CPU 1", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
+    { "CPU Load", "CPU 2", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
+    { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
+    { "Network",  "eth0",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
+    { "Network",  "eth1",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
+    { "Network",  "eth2",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
+    { "Network",  "wlan0", net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
+    { "Network",  "ath0",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
+    { "Network",  "lo",    net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
 };
 
 #if 0
@@ -203,9 +204,7 @@ static void change_size_iter(gint type, gint size)
 	g_object_unref(work[type].pix);
     work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, size);
     
-    guchar *pixels = gdk_pixbuf_get_pixels(work[type].pix);
-    gint rowstride = gdk_pixbuf_get_rowstride(work[type].pix);
-    memset(pixels, 0x80, rowstride * size);
+    (*funcs[type].draw_all)(type, work[type].pix, &bg, &fg, &err);
 }
 
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)

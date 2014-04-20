@@ -109,6 +109,29 @@ void cpuload_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkCo
     }
 }
 
+void cpuload_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+{
+    int n = (type - TYPE_CPULOAD_0);
+    
+    gint w = gdk_pixbuf_get_width(pix);
+    gint h = gdk_pixbuf_get_height(pix);
+    
+    gint x = w - 1;
+    for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
+	gdouble load = *(gdouble *) lp->data;
+	
+	if (load >= 0) {
+	    draw_line(pix, x, 0, h - 1, bg);
+	    draw_line(pix, x, h - h * load, h - 1, fg);
+	} else {
+	    draw_line(pix, x, 0, h - 1, err);
+	}
+    }
+    
+    for ( ; x >= 0; x--)
+	draw_line(pix, x, 0, h - 1, err);
+}
+
 void cpuload_discard_data(gint type, gint size)
 {
     int n = (type - TYPE_CPULOAD_0);

@@ -41,6 +41,7 @@ struct log_t {
 static int dir = -1;
 static GList *list[NIF] = { NULL, };
 static gint64 olddata[NIF][2] = { { 0, }, };	// [0]:rx, [1]:tx
+static gdouble oldlevel[NIF] = { 0, };
 static const char *ifnames[] = {
     "eth0",
     "eth1",
@@ -118,6 +119,56 @@ void net_read_data(gint type)
 }
 
 void net_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+{
+    int n = (type - TYPE_NET_ETH0);
+    
+    GdkColor fg2 = {
+	.red = 0,
+	.green = 65535,
+	.blue = 0,
+    };
+    
+    gdouble level = 1;
+    
+    for (GList *lp = list[n]; lp != NULL; lp = g_list_next(lp)) {
+	struct log_t *p = (struct log_t *) lp->data;
+	gdouble lev_rx = ceil(p->logrx);
+	gdouble lev_tx = ceil(p->logtx);
+	if (lev_rx > level)
+	    level = lev_rx;
+	if (lev_tx > level)
+	    level = lev_tx;
+    }
+    
+    if (oldlevel[n] != level) {
+	oldlevel[n] = level;
+	net_draw_all(type, pix, bg, fg, err);
+	return;
+    }
+    
+    gint w = gdk_pixbuf_get_width(pix);
+    gint h = gdk_pixbuf_get_height(pix);
+    
+    struct log_t *p = NULL;
+    GList *lp = list[n];
+    if (lp != NULL)
+	p = lp->data;
+    
+    if (p != NULL && p->logrx >= 0 && p->logtx >= 0) {
+	draw_line(pix, w - 1, 0, h - 1, bg);
+	draw_line(pix, w - 1, h / 2 - h * p->logtx / level / 2, h / 2, fg);
+	draw_line(pix, w - 1, h / 2, h / 2 + h * p->logrx / level / 2, &fg2);
+	
+	for (gint i = 0; i < level; i++)
+	    draw_point(pix, w - 1, h / 2 - h * i / level / 2, err);
+	for (gint i = 0; i < level; i++)
+	    draw_point(pix, w - 1, h / 2 + h * i / level / 2, err);
+    } else {
+	draw_line(pix, w - 1, 0, h - 1, err);
+    }
+}
+
+void net_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
 {
     int n = (type - TYPE_NET_ETH0);
     
