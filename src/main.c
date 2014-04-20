@@ -62,6 +62,7 @@ static struct {
     { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
 };
 
+#if 0
 static void print_hier(GtkWidget *w, gint indent)
 {
     fprintf(stderr, "%*s%s %dx%d+%d+%d %s window\n",
@@ -75,6 +76,7 @@ static void print_hier(GtkWidget *w, gint indent)
 	    print_hier(GTK_WIDGET(list->data), indent + 2);
     }
 }
+#endif
 
 static gboolean timer(gpointer data)
 {
