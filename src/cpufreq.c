@@ -28,6 +28,7 @@
 #include "types.h"
 #include "sysfs.h"
 #include "list.h"
+#include "line.h"
 #include "cpufreq.h"
 
 #define NCPU 4
