@@ -14,6 +14,8 @@ multi_monitor_SOURCES = \
     loadavg.h		\
     cpuload.c		\
     cpuload.h		\
+    net.c		\
+    net.h		\
     list.c		\
     list.h		\
     line.c		\

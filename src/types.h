@@ -19,6 +19,13 @@ enum {
     TYPE_CPULOAD_2,
     TYPE_CPULOAD_3,
     
+    TYPE_NET_ETH0,
+    TYPE_NET_ETH1,
+    TYPE_NET_ETH2,
+    TYPE_NET_WLAN0,
+    TYPE_NET_ATH0,
+    TYPE_NET_LO,
+    
     TYPE_NR
 };
 

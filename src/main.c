@@ -27,6 +27,7 @@
 #include "cpufreq.h"
 #include "loadavg.h"
 #include "cpuload.h"
+#include "net.h"
 #include "main.h"
 
 static XfcePanelPlugin *plugin;
@@ -61,6 +62,12 @@ static struct {
     { "CPU Load", "CPU 1", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
     { "CPU Load", "CPU 2", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
     { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1, cpuload_discard_data },
+    { "Network",  "eth0",  net_read_data,     net_draw_1,     net_discard_data },
+    { "Network",  "eth1",  net_read_data,     net_draw_1,     net_discard_data },
+    { "Network",  "eth2",  net_read_data,     net_draw_1,     net_discard_data },
+    { "Network",  "wlan0", net_read_data,     net_draw_1,     net_discard_data },
+    { "Network",  "ath0",  net_read_data,     net_draw_1,     net_discard_data },
+    { "Network",  "lo",    net_read_data,     net_draw_1,     net_discard_data },
 };
 
 #if 0
@@ -415,6 +422,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     cpufreq_init();
     loadavg_init();
     cpuload_init();
+    net_init();
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)
