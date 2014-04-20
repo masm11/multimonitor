@@ -102,7 +102,7 @@ void loadavg_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkCo
 	    draw_line(pix, x, h - h * load / level, h - 1, fg);
 	    
 	    for (gint i = 1; i < level; i++) {
-		draw_line(pix, x, h - h * i / level, h - h * i / level, err);
+		draw_point(pix, x, h - h * i / level, err);
 	    }
 	} else {
 	    draw_line(pix, x, 0, h - 1, err);
