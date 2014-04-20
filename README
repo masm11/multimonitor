@@ -31,7 +31,8 @@ Multi Monitor for Xfce
   CPU Load は、一番上が 100%、一番下は 0% です。
 
   Network は対数グラフで、中央より上向きが送信、下向きが受信です。横線
-  1本めが 1Kbps、2本めが 1Mbps、3本めが 1Gbps です。
+  1本めが 1Kbps、2本めが 1Mbps、3本めが 1Gbps です。受信は緑色になって
+  います。
 
 
 ライセンス
