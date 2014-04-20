@@ -28,6 +28,7 @@
 #include "loadavg.h"
 #include "cpuload.h"
 #include "net.h"
+#include "draw.h"
 #include "main.h"
 
 static XfcePanelPlugin *plugin;
@@ -94,19 +95,8 @@ static gboolean timer(gpointer data)
     }
     
     // 1dotずらす
-    for (gint type = 0; type < TYPE_NR; type++) {
-	guchar *pixels = gdk_pixbuf_get_pixels(work[type].pix);
-	gint rowstride = gdk_pixbuf_get_rowstride(work[type].pix);
-	gint nch = gdk_pixbuf_get_n_channels(work[type].pix);
-	guchar *dst = pixels;
-	guchar *src = dst + nch;
-	guint len = nch * (gdk_pixbuf_get_width(work[type].pix) - 1);
-	for (gint y = 0; y < gdk_pixbuf_get_height(work[type].pix); y++) {
-	    memmove(dst, src, len);
-	    src += rowstride;
-	    dst += rowstride;
-	}
-    }
+    for (gint type = 0; type < TYPE_NR; type++)
+	draw_shift(work[type].pix);
     
     // 右端の 1dot を描画
     for (gint type = 0; type < TYPE_NR; type++)

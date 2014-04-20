@@ -18,7 +18,7 @@
 #include <cairo.h>
 #include <glib.h>
 #include <gdk/gdk.h>
-#include "line.h"
+#include "draw.h"
 
 void draw_line(GdkPixbuf *pix,
 	gint x, gint y1, gint y2,
@@ -44,4 +44,19 @@ void draw_point(GdkPixbuf *pix,
     p[0] = color->red >> 8;
     p[1] = color->green >> 8;
     p[2] = color->blue >> 8;
+}
+
+void draw_shift(GdkPixbuf *pix)
+{
+    guchar *pixels = gdk_pixbuf_get_pixels(pix);
+    gint rowstride = gdk_pixbuf_get_rowstride(pix);
+    gint nch = gdk_pixbuf_get_n_channels(pix);
+    guchar *dst = pixels;
+    guchar *src = dst + nch;
+    guint len = nch * (gdk_pixbuf_get_width(pix) - 1);
+    for (gint y = 0; y < gdk_pixbuf_get_height(pix); y++) {
+	memmove(dst, src, len);
+	src += rowstride;
+	dst += rowstride;
+    }
 }

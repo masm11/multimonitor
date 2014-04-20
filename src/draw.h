@@ -15,8 +15,8 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef LINE_H__INCLUDED
-#define LINE_H__INCLUDED
+#ifndef DRAW_H__INCLUDED
+#define DRAW_H__INCLUDED
 
 void draw_line(GdkPixbuf *pix,
 	gint x, gint y1, gint y2,
@@ -26,4 +26,6 @@ void draw_point(GdkPixbuf *pix,
 	gint x, gint y,
 	GdkColor *color);
 
-#endif	/* ifndef LINE_H__INCLUDED */
+void draw_shift(GdkPixbuf *pix);
+
+#endif	/* ifndef DRAW_H__INCLUDED */

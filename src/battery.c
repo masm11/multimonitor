@@ -26,7 +26,7 @@
 #include "types.h"
 #include "sysfs.h"
 #include "list.h"
-#include "line.h"
+#include "draw.h"
 #include "battery.h"
 
 #define NBATT 2

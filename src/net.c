@@ -29,7 +29,7 @@
 #include <math.h>
 #include "types.h"
 #include "list.h"
-#include "line.h"
+#include "draw.h"
 #include "net.h"
 
 #define NIF 6

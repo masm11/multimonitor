@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include "types.h"
 #include "list.h"
-#include "line.h"
+#include "draw.h"
 #include "cpuload.h"
 
 #define NCPU 4

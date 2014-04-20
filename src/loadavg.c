@@ -29,7 +29,7 @@
 #include <cairo.h>
 #include "types.h"
 #include "list.h"
-#include "line.h"
+#include "draw.h"
 #include "loadavg.h"
 
 #define NAVG 3
