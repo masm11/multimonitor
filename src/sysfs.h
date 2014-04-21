@@ -19,5 +19,6 @@
 #define SYSFS_H__INCLUDED
 
 gint sysfs_read_int(int dir, const char *pathfmt, ...);
+gint64 sysfs_read_64(int dir, const char *pathfmt, ...);
 
 #endif	/* ifndef SYSFS_H__INCLUDED */

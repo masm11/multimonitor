@@ -30,6 +30,7 @@
 #include "types.h"
 #include "list.h"
 #include "draw.h"
+#include "sysfs.h"
 #include "net.h"
 
 #define NIF 6
@@ -41,7 +42,9 @@ struct log_t {
 static int dir = -1;
 static GList *list[NIF] = { NULL, };
 static gint64 olddata[NIF][2] = { { 0, }, };	// [0]:rx, [1]:tx
+static gint64 lastdata[NIF][2] = { { 0, }, };	// [0]:rx, [1]:tx
 static gdouble oldlevel[NIF] = { 0, };
+static gchar tooltip[NIF][128];
 static const char *ifnames[] = {
     "eth0",
     "eth1",
@@ -53,7 +56,7 @@ static const char *ifnames[] = {
 
 void net_init(void)
 {
-    dir = open("/proc/net", O_RDONLY);
+    dir = open("/sys/class/net", O_RDONLY);
 }
 
 void net_read_data(gint type)
@@ -63,45 +66,20 @@ void net_read_data(gint type)
     
     int n = type - TYPE_NET_ETH0;
     
-    gint64 tx = -1, rx = -1;
+    gint64 r = sysfs_read_64(dir, "%s/statistics/rx_bytes", ifnames[n]);
+    gint64 t = sysfs_read_64(dir, "%s/statistics/tx_bytes", ifnames[n]);
     
-    int fd = openat(dir, "dev", O_RDONLY);
-    if (fd >= 0) {
-	FILE *fp = fdopen(fd, "rt");
-	
-	char buf[1024];
-	gint ver;
-	
-	fgets(buf, sizeof buf, fp);
-	fgets(buf, sizeof buf, fp);
-	if (strstr(buf, "compressed") != NULL)
-	    ver = 3;
-	else if (strstr(buf, "bytes") != NULL)
-	    ver = 2;
-	else
-	    ver = 1;
-	
-	if (ver == 3) {
-	    char ifcol[16];
-	    snprintf(ifcol, sizeof ifcol, "%s:", ifnames[n]);
-	    while (!feof(fp)) {
-		char name[16];
-		gint64 r, t;
-		if (fscanf(fp, "%s %" G_GINT64_FORMAT " %*u %*u %*u %*u %*u %*u %*u %" G_GINT64_FORMAT " %*u %*u %*u %*u %*u %*u %*u",
-				name, &r, &t) == 3) {
-		    if (strcmp(name, ifcol) == 0) {
-			rx = r - olddata[n][0];
-			tx = t - olddata[n][1];
-			olddata[n][0] = r;
-			olddata[n][1] = t;
-			break;
-		    }
-		}
-	    }
-	}
-	
-	fclose(fp);
+    gint64 rx = -1;
+    gint64 tx = -1;
+    if (r >= 0 && t >= 0) {
+	rx = r - olddata[n][0];
+	tx = t - olddata[n][1];
     }
+    olddata[n][0] = r;
+    olddata[n][1] = t;
+    
+    lastdata[n][0] = rx;
+    lastdata[n][1] = tx;
     
     struct log_t *p = g_new0(struct log_t, 1);
     if (rx < 0 || tx < 0) {
@@ -223,5 +201,13 @@ void net_discard_data(gint type, gint size)
 
 const gchar *net_tooltip(gint type)
 {
-    return NULL;
+    gint n = type - TYPE_NET_ETH0;
+    
+    if (lastdata[n][0] < 0 || lastdata[n][1] < 0)
+	return NULL;
+    
+    snprintf(tooltip[n], sizeof tooltip[n], "tx:%d, rx:%d",
+	    (gint) lastdata[n][1], (gint) lastdata[n][0]);
+    
+    return tooltip[n];
 }
