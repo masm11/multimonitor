@@ -51,25 +51,27 @@ static struct {
     void (*draw_all)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
     void (*discard_data)(gint, gint);
 } funcs[] = {
-    { "Battery",  "BAT0",  battery_read_data, battery_draw_1, battery_draw_all, battery_discard_data },
-    { "Battery",  "BAT1",  battery_read_data, battery_draw_1, battery_draw_all, battery_discard_data },
-    { "CPU Freq", "CPU 0", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
-    { "CPU Freq", "CPU 1", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
-    { "CPU Freq", "CPU 2", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
-    { "CPU Freq", "CPU 3", cpufreq_read_data, cpufreq_draw_1, cpufreq_draw_all, cpufreq_discard_data },
-    { "Loadavg",  "1min",  loadavg_read_data, loadavg_draw_1, loadavg_draw_all, loadavg_discard_data },
-    { "Loadavg",  "5min",  loadavg_read_data, loadavg_draw_1, loadavg_draw_all, loadavg_discard_data },
-    { "Loadavg",  "15min", loadavg_read_data, loadavg_draw_1, loadavg_draw_all, loadavg_discard_data },
-    { "CPU Load", "CPU 0", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
-    { "CPU Load", "CPU 1", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
-    { "CPU Load", "CPU 2", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
-    { "CPU Load", "CPU 3", cpuload_read_data, cpuload_draw_1, cpuload_draw_all, cpuload_discard_data },
-    { "Network",  "eth0",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
-    { "Network",  "eth1",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
-    { "Network",  "eth2",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
-    { "Network",  "wlan0", net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
-    { "Network",  "ath0",  net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
-    { "Network",  "lo",    net_read_data,     net_draw_1,     net_draw_all,     net_discard_data },
+#define FUNC(label, sub, sym) { label, sub, sym##_read_data, sym##_draw_1, sym##_draw_all, sym##_discard_data }
+    FUNC("Battery",  "BAT0",  battery),
+    FUNC("Battery",  "BAT1",  battery),
+    FUNC("CPU Freq", "CPU 0", cpufreq),
+    FUNC("CPU Freq", "CPU 1", cpufreq),
+    FUNC("CPU Freq", "CPU 2", cpufreq),
+    FUNC("CPU Freq", "CPU 3", cpufreq),
+    FUNC("Loadavg",  "1min",  loadavg),
+    FUNC("Loadavg",  "5min",  loadavg),
+    FUNC("Loadavg",  "15min", loadavg),
+    FUNC("CPU Load", "CPU 0", cpuload),
+    FUNC("CPU Load", "CPU 1", cpuload),
+    FUNC("CPU Load", "CPU 2", cpuload),
+    FUNC("CPU Load", "CPU 3", cpuload),
+    FUNC("Network",  "eth0",  net),
+    FUNC("Network",  "eth1",  net),
+    FUNC("Network",  "eth2",  net),
+    FUNC("Network",  "wlan0", net),
+    FUNC("Network",  "ath0",  net),
+    FUNC("Network",  "lo",    net),
+#undef FUNC
 };
 
 #if 0
