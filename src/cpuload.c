@@ -37,6 +37,7 @@
 static int dir = -1;
 static GList *list[NCPU] = { NULL, };
 static guint64 olddata[NCPU][NDATA];
+static gchar tooltip[NCPU][128];
 
 void cpuload_init(void)
 {
@@ -136,4 +137,16 @@ void cpuload_discard_data(gint type, gint size)
 {
     int n = (type - TYPE_CPULOAD_0);
     list[n] = list_truncate(list[n], size);
+}
+
+const gchar *cpuload_tooltip(gint type)
+{
+    gint n = type - TYPE_CPULOAD_0;
+    gdouble load = -1;
+    if (list[n] != NULL)
+	load = *(gdouble *) list[n]->data;
+    if (load < 0)
+	return NULL;
+    snprintf(tooltip[n], sizeof tooltip[n], "%.1f%%", load * 100);
+    return tooltip[n];
 }

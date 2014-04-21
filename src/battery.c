@@ -34,6 +34,7 @@
 static int pow = -1;
 
 static GList *list[NBATT] = { NULL, };
+static gchar tooltip[NBATT][128];
 
 void battery_init(void)
 {
@@ -102,4 +103,16 @@ void battery_discard_data(gint type, gint size)
 {
     int n = type - TYPE_BATT_0;
     list[n] = list_truncate(list[n], size);
+}
+
+const gchar *battery_tooltip(gint type)
+{
+    gint n = type - TYPE_BATT_0;
+    gint cap = -1;
+    if (list[n] != NULL)
+	cap = *(gint *) list[n]->data;
+    if (cap < 0)
+	return NULL;
+    snprintf(tooltip[n], sizeof tooltip[n], "%d%%", cap);
+    return tooltip[n];
 }

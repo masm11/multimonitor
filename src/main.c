@@ -50,8 +50,9 @@ static struct {
     void (*draw_1)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
     void (*draw_all)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
     void (*discard_data)(gint, gint);
+    const gchar *(*tooltip)(gint);
 } funcs[] = {
-#define FUNC(label, sub, sym) { label, sub, sym##_read_data, sym##_draw_1, sym##_draw_all, sym##_discard_data }
+#define FUNC(label, sub, sym) { label, sub, sym##_read_data, sym##_draw_1, sym##_draw_all, sym##_discard_data, sym##_tooltip }
     FUNC("Battery",  "BAT0",  battery),
     FUNC("Battery",  "BAT1",  battery),
     FUNC("CPU Freq", "CPU 0", cpufreq),
@@ -134,6 +135,11 @@ static gboolean timer(gpointer data)
     // widget に描画
     for (gint type = 0; type < TYPE_NR; type++)
 	draw_to_widget(type);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	const gchar *text = (*funcs[type].tooltip)(type);
+	gtk_widget_set_tooltip_text(work[type].drawable, text);
+    }
     
     // 余分なデータを捨てる。
     for (gint type = 0; type < TYPE_NR; type++)

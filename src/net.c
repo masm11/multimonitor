@@ -220,3 +220,8 @@ void net_discard_data(gint type, gint size)
     int n = (type - TYPE_NET_ETH0);
     list[n] = list_truncate(list[n], size);
 }
+
+const gchar *net_tooltip(gint type)
+{
+    return NULL;
+}

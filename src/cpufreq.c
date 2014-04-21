@@ -36,6 +36,7 @@
 static int dir = -1;
 static int maxfreq[NCPU] = { -1, };
 static GList *list[NCPU] = { NULL, };
+static gchar tooltip[NCPU][128];
 
 void cpufreq_init(void)
 {
@@ -107,4 +108,19 @@ void cpufreq_discard_data(gint type, gint size)
 {
     int n = (type - TYPE_CPUFREQ_0);
     list[n] = list_truncate(list[n], size);
+}
+
+const gchar *cpufreq_tooltip(gint type)
+{
+    gint n = type - TYPE_CPUFREQ_0;
+    gint freq = -1;
+    if (list[n] != NULL)
+	freq = *(gint *) list[n]->data;
+    if (freq < 0)
+	return NULL;
+    if (freq <= 1000000)
+	snprintf(tooltip[n], sizeof tooltip[n], "%dMHz", freq / 1000);
+    else
+	snprintf(tooltip[n], sizeof tooltip[n], "%.1fGHz", (gdouble) freq / 1000000);
+    return tooltip[n];
 }
