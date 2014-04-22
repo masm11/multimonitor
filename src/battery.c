@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 #include "types.h"
 #include "sysfs.h"
 #include "list.h"
@@ -33,8 +34,24 @@
 
 static int pow = -1;
 
+struct data_t {
+    gboolean charging;
+    gint capacity;
+};
+
 static GList *list[NBATT] = { NULL, };
 static gchar tooltip[NBATT][128];
+
+static GdkColor bg2 = {
+    .red = 0x0000,
+    .green = 0x4040,
+    .blue = 0,
+};
+static GdkColor fg2 = {
+    .red = 0xffff,
+    .green = 0x4040,
+    .blue = 0,
+};
 
 void battery_init(void)
 {
@@ -49,9 +66,12 @@ void battery_read_data(gint type)
     int n = type - TYPE_BATT_0;
     
     int cap = sysfs_read_int(pow, "BAT%d/capacity", n);
+    char status[16];
+    sysfs_read_str(pow, status, sizeof status, "BAT%d/status", n);
     
-    gint *p = g_new0(gint, 1);
-    *p = cap;
+    struct data_t *p = g_new0(struct data_t, 1);
+    p->charging = (strcasecmp(status, "charging") == 0);
+    p->capacity = cap;
     list[n] = g_list_prepend(list[n], p);
 }
 
@@ -59,18 +79,22 @@ void battery_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkCo
 {
     int n = type - TYPE_BATT_0;
     
-    int cap = -1;
+    struct data_t *p = NULL;
     
     GList *lp = list[n];
     if (lp != NULL)
-	cap = *(gint *) lp->data;
+	p = (struct data_t *) lp->data;
     
     gint w = gdk_pixbuf_get_width(pix);
     gint h = gdk_pixbuf_get_height(pix);
     
-    if (cap >= 0) {
+    if (p != NULL && p->capacity >= 0) {
+	if (p->charging) {
+	    bg = &bg2;
+	    fg = &fg2;
+	}
 	draw_line(pix, w - 1, 0, h - 1, bg);
-	draw_line(pix, w - 1, h - h * cap / 100, h - 1, fg);
+	draw_line(pix, w - 1, h - h * p->capacity / 100, h - 1, fg);
     } else {
 	draw_line(pix, w - 1, 0, h - 1, err);
     }
@@ -85,11 +109,15 @@ void battery_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, Gdk
     
     gint x = w - 1;
     for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
-	gint cap = *(gint *) lp->data;
+	struct data_t *p = (struct data_t *) lp->data;
 	
-	if (cap >= 0) {
+	if (p != NULL && p->capacity >= 0) {
+	    if (p->charging) {
+		bg = &bg2;
+		fg = &fg2;
+	    }
 	    draw_line(pix, x, 0, h - 1, bg);
-	    draw_line(pix, x, h - h * cap / 100, h - 1, fg);
+	    draw_line(pix, x, h - h * p->capacity / 100, h - 1, fg);
 	} else {
 	    draw_line(pix, x, 0, h - 1, err);
 	}
@@ -108,11 +136,12 @@ void battery_discard_data(gint type, gint size)
 const gchar *battery_tooltip(gint type)
 {
     gint n = type - TYPE_BATT_0;
-    gint cap = -1;
+    struct data_t *p = NULL;
     if (list[n] != NULL)
-	cap = *(gint *) list[n]->data;
-    if (cap < 0)
+	p = (struct data_t *) list[n]->data;
+    if (p == NULL || p->capacity < 0)
 	return NULL;
-    snprintf(tooltip[n], sizeof tooltip[n], "%d%%", cap);
+    snprintf(tooltip[n], sizeof tooltip[n], "%d%%\n%scharging",
+	    p->capacity, p->charging ? "" : "dis");
     return tooltip[n];
 }

@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <glib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -79,4 +80,31 @@ gint64 sysfs_read_64(int dir, const char *pathfmt, ...)
 	val = -1;
     
     return val;
+}
+
+gint sysfs_read_str(int dir, char *buf, int bufsiz, const char *pathfmt, ...)
+{
+    char path[128];
+    
+    va_list ap;
+    va_start(ap, pathfmt);
+    vsnprintf(path, sizeof path, pathfmt, ap);
+    va_end(ap);
+    
+    int fd = openat(dir, path, O_RDONLY);
+    
+    if (fd < 0)
+	return -1;
+    
+    int s = read(fd, buf, bufsiz);
+    close(fd);
+    if (s >= bufsiz)
+	s = bufsiz - 1;
+    buf[s] = '\0';
+    
+    s = strlen(buf);
+    if (buf[s - 1] == '\n')
+	buf[s - 1] = '\0';
+    
+    return s;
 }

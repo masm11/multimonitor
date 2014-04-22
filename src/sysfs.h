@@ -20,5 +20,6 @@
 
 gint sysfs_read_int(int dir, const char *pathfmt, ...);
 gint64 sysfs_read_64(int dir, const char *pathfmt, ...);
+gint sysfs_read_str(int dir, char *buf, int bufsiz, const char *pathfmt, ...);
 
 #endif	/* ifndef SYSFS_H__INCLUDED */
