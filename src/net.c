@@ -27,6 +27,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
 #include "types.h"
 #include "list.h"
 #include "draw.h"
@@ -40,6 +45,7 @@ struct log_t {
 };
 
 static int dir = -1;
+static int procdir = -1;
 static GList *list[NIF] = { NULL, };
 static gint64 olddata[NIF][2] = { { 0, }, };	// [0]:rx, [1]:tx
 static gint64 lastdata[NIF][2] = { { 0, }, };	// [0]:rx, [1]:tx
@@ -54,9 +60,14 @@ static const char *ifnames[] = {
     "lo",
 };
 
+static gint get_addr4(const gchar *ifname, gchar *buf, gint bufsiz);
+static gint get_addr6(const gchar *ifname, gchar *buf, gint bufsiz);
+static gint append_bps(const gchar *label, gint64 bps, gchar *buf, gint bufsiz);
+
 void net_init(void)
 {
     dir = open("/sys/class/net", O_RDONLY);
+    procdir = open("/proc/net", O_RDONLY);
 }
 
 void net_read_data(gint type)
@@ -206,8 +217,151 @@ const gchar *net_tooltip(gint type)
     if (lastdata[n][0] < 0 || lastdata[n][1] < 0)
 	return NULL;
     
-    snprintf(tooltip[n], sizeof tooltip[n], "tx:%d, rx:%d",
-	    (gint) lastdata[n][1], (gint) lastdata[n][0]);
+    gchar *buf = tooltip[n];
+    gint bufsiz = sizeof tooltip[n];
+    
+    gint siz;
+    
+    siz = get_addr4(ifnames[n], buf, bufsiz);
+    buf += siz;
+    bufsiz -= siz;
+    
+    siz = get_addr6(ifnames[n], buf, bufsiz);
+    buf += siz;
+    bufsiz -= siz;
+    
+    siz = append_bps("Tx", lastdata[n][1] * 8, buf, bufsiz);
+    buf += siz;
+    bufsiz -= siz;
+    
+    siz = append_bps("Rx", lastdata[n][0] * 8, buf, bufsiz);
+    buf += siz;
+    bufsiz -= siz;
+    
+    // 最後の \n を削除。
+    char *p = tooltip[n];
+    p += strlen(p);
+    if (*--p == '\n')
+	*p = '\0';
     
     return tooltip[n];
+}
+
+static gint get_addr4(const gchar *ifname, gchar *buf, gint bufsiz)
+{
+    struct ifreq ifr;
+    int s;
+    
+    s = socket(PF_INET, SOCK_DGRAM, 0);
+    if (s == -1)
+	return 0;
+    
+    strcpy(ifr.ifr_name, ifname);
+    ifr.ifr_addr.sa_family = AF_INET;
+    
+    if (ioctl(s, SIOCGIFADDR, &ifr) == -1) {
+	close(s);
+	return 0;
+    }
+    
+    struct in_addr addr = ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr;
+    
+    strcpy(ifr.ifr_name, ifname);
+    ifr.ifr_addr.sa_family = AF_INET;
+    
+    if (ioctl(s, SIOCGIFNETMASK, &ifr) == -1) {
+	close(s);
+	return 0;
+    }
+    
+    const guchar *m = (const guchar *) &((struct sockaddr_in *) &ifr.ifr_netmask)->sin_addr;
+    gint prefixlen = 0;
+    for (gint i = 0; i < 4; i++) {
+	for (gint j = 0; j < 8; j++) {
+	    if (m[i] & (0x80 >> j))
+		prefixlen++;
+	}
+    }
+    
+    close(s);
+    
+    return snprintf(buf, bufsiz, "%d.%d.%d.%d/%d\n",
+	    ((const guchar *) &addr)[0],
+	    ((const guchar *) &addr)[1],
+	    ((const guchar *) &addr)[2],
+	    ((const guchar *) &addr)[3],
+	    prefixlen);
+}
+
+static gint get_addr6(const gchar *ifname, gchar *buf, gint bufsiz)
+{
+    gint orig_bufsiz = bufsiz;
+    
+    if (procdir < 0)
+	return 0;
+    
+    int fd = openat(procdir, "if_inet6", O_RDONLY);
+    if (fd < 0)
+	return 0;
+    
+    FILE *fp = fdopen(fd, "rt");
+    
+    while (!feof(fp)) {
+	gchar addrstr[40];
+	gint idx;
+	gint prefixlen;
+	gint scope;
+	gint dad_status;
+	gchar devname[16];
+	
+	if (fscanf(fp, "%40s %x %x %x %x %s",
+			addrstr, &idx, &prefixlen, &scope, &dad_status, devname) != 6)
+	    continue;
+	if (strcmp(devname, ifname) != 0)
+	    continue;
+	if (strlen(addrstr) != 32)
+	    continue;
+	
+	gchar tmpaddr[128];
+	gchar *s = addrstr;
+	gchar *d = tmpaddr;
+	for (gint i = 0; i < 8; i++) {
+	    *d++ = *s++;
+	    *d++ = *s++;
+	    *d++ = *s++;
+	    *d++ = *s++;
+	    if (i != 7)
+		*d++ = ':';
+	    else
+		*d++ = '\0';
+	}
+	
+	// 先頭の 0 を取り除き、:0:0:… を :: に圧縮するため、
+	// inet_pton と inet_ntop で変換する。
+	struct in6_addr addr;
+	if (inet_pton(AF_INET6, tmpaddr, &addr) <= 0)
+	    continue;
+	if (inet_ntop(AF_INET6, &addr, tmpaddr, sizeof tmpaddr) == NULL)
+	    continue;
+	
+	gint size = snprintf(buf, bufsiz, "%s/%d\n", tmpaddr, prefixlen);
+	buf += size;
+	bufsiz -= size;
+    }
+    
+    fclose(fp);
+    
+    return orig_bufsiz - bufsiz;
+}
+
+static gint append_bps(const gchar *label, gint64 bps, gchar *buf, gint bufsiz)
+{
+    if (bps < 1000)
+	return snprintf(buf, bufsiz, "%s:%dbps\n", label, (gint) bps);
+    else if (bps < 1000000)
+	return snprintf(buf, bufsiz, "%s:%.1fKbps\n", label, (gdouble) bps / 1000);
+    else if (bps < 1000000000)
+	return snprintf(buf, bufsiz, "%s:%.1fMbps\n", label, (gdouble) bps / 1000 / 1000);
+    else
+	return snprintf(buf, bufsiz, "%s:%.1fGbps\n", label, (gdouble) bps / 1000 / 1000 / 1000);
 }
