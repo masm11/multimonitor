@@ -46,32 +46,33 @@ static char *fontname;
 
 static struct {
     const char *label, *sublabel;
+    gint interval;
     void (*read_data)(gint);
     void (*draw_1)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
     void (*draw_all)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
     void (*discard_data)(gint, gint);
     const gchar *(*tooltip)(gint);
 } funcs[] = {
-#define FUNC(label, sub, sym) { label, sub, sym##_read_data, sym##_draw_1, sym##_draw_all, sym##_discard_data, sym##_tooltip }
-    FUNC("Battery",  "BAT0",  battery),
-    FUNC("Battery",  "BAT1",  battery),
-    FUNC("CPU Freq", "CPU 0", cpufreq),
-    FUNC("CPU Freq", "CPU 1", cpufreq),
-    FUNC("CPU Freq", "CPU 2", cpufreq),
-    FUNC("CPU Freq", "CPU 3", cpufreq),
-    FUNC("Loadavg",  "1min",  loadavg),
-    FUNC("Loadavg",  "5min",  loadavg),
-    FUNC("Loadavg",  "15min", loadavg),
-    FUNC("CPU Load", "CPU 0", cpuload),
-    FUNC("CPU Load", "CPU 1", cpuload),
-    FUNC("CPU Load", "CPU 2", cpuload),
-    FUNC("CPU Load", "CPU 3", cpuload),
-    FUNC("Network",  "eth0",  net),
-    FUNC("Network",  "eth1",  net),
-    FUNC("Network",  "eth2",  net),
-    FUNC("Network",  "wlan0", net),
-    FUNC("Network",  "ath0",  net),
-    FUNC("Network",  "lo",    net),
+#define FUNC(label, sub, interval, sym) { label, sub, interval, sym##_read_data, sym##_draw_1, sym##_draw_all, sym##_discard_data, sym##_tooltip }
+    FUNC("Battery",  "BAT0",  5000, battery),
+    FUNC("Battery",  "BAT1",  5000, battery),
+    FUNC("CPU Freq", "CPU 0",  250, cpufreq),
+    FUNC("CPU Freq", "CPU 1",  250, cpufreq),
+    FUNC("CPU Freq", "CPU 2",  250, cpufreq),
+    FUNC("CPU Freq", "CPU 3",  250, cpufreq),
+    FUNC("Loadavg",  "1min",  5000, loadavg),
+    FUNC("Loadavg",  "5min",  5000, loadavg),
+    FUNC("Loadavg",  "15min", 5000, loadavg),
+    FUNC("CPU Load", "CPU 0",  250, cpuload),
+    FUNC("CPU Load", "CPU 1",  250, cpuload),
+    FUNC("CPU Load", "CPU 2",  250, cpuload),
+    FUNC("CPU Load", "CPU 3",  250, cpuload),
+    FUNC("Network",  "eth0",  1000, net),
+    FUNC("Network",  "eth1",  1000, net),
+    FUNC("Network",  "eth2",  1000, net),
+    FUNC("Network",  "wlan0", 1000, net),
+    FUNC("Network",  "ath0",  1000, net),
+    FUNC("Network",  "lo",    1000, net),
 #undef FUNC
 };
 
@@ -119,31 +120,25 @@ static void draw_to_widget(gint type)
 
 static gboolean timer(gpointer data)
 {
+    gint type = GPOINTER_TO_SIZE(data);
+    
     // データを読む
-    for (gint type = 0; type < TYPE_NR; type++) {
-	(*funcs[type].read_data)(type);
-    }
+    (*funcs[type].read_data)(type);
     
     // 1dotずらす
-    for (gint type = 0; type < TYPE_NR; type++)
-	draw_shift(work[type].pix);
+    draw_shift(work[type].pix);
     
     // 右端の 1dot を描画
-    for (gint type = 0; type < TYPE_NR; type++)
-	(*funcs[type].draw_1)(type, work[type].pix, &bg, &fg, &err);
+    (*funcs[type].draw_1)(type, work[type].pix, &bg, &fg, &err);
     
     // widget に描画
-    for (gint type = 0; type < TYPE_NR; type++)
-	draw_to_widget(type);
+    draw_to_widget(type);
     
-    for (gint type = 0; type < TYPE_NR; type++) {
-	const gchar *text = (*funcs[type].tooltip)(type);
-	gtk_widget_set_tooltip_text(work[type].drawable, text);
-    }
+    const gchar *text = (*funcs[type].tooltip)(type);
+    gtk_widget_set_tooltip_text(work[type].drawable, text);
     
     // 余分なデータを捨てる。
-    for (gint type = 0; type < TYPE_NR; type++)
-	(*funcs[type].discard_data)(type, work[type].drawable->allocation.width);
+    (*funcs[type].discard_data)(type, work[type].drawable->allocation.width);
     
     // print_hier(GTK_WIDGET(plugin), 0);
     
@@ -397,6 +392,9 @@ static void plugin_start(XfcePanelPlugin *plg)
     
     load_config();
     
+    GtkSettings *settings = gtk_settings_get_for_screen(gdk_screen_get_default());
+    gtk_settings_set_long_property(settings, "gtk-tooltip-timeout", 100, "multi-monitor");
+    
     for (gint type = 0; type < TYPE_NR; type++) {
 	work[type].ev = gtk_event_box_new();
 	gtk_box_pack_start(GTK_BOX(box), work[type].ev, FALSE, FALSE, 0);
@@ -414,11 +412,11 @@ static void plugin_start(XfcePanelPlugin *plg)
 	    gtk_widget_hide(work[type].ev);
 	
 	work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 40, 40);
+	
+	g_timeout_add(funcs[type].interval, timer, GSIZE_TO_POINTER(type));
     }
     
     set_label();
-    
-    g_timeout_add(1000, timer, NULL);
     
     battery_init();
     cpufreq_init();
