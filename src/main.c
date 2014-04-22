@@ -323,7 +323,7 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     
     GtkWidget *tbl = gtk_table_new((TYPE_NR + 1) / 2, 2, TRUE);
     gtk_widget_show(tbl);
-    gtk_container_set_border_width(GTK_CONTAINER(box), 5);
+    gtk_container_set_border_width(GTK_CONTAINER(tbl), 5);
     gtk_container_add(GTK_CONTAINER(frame), tbl);
     
     gint x = 0, y = 0;
