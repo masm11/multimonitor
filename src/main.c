@@ -321,11 +321,12 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     gtk_container_set_border_width(GTK_CONTAINER(frame), 5);
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), frame, FALSE, FALSE, 0);
     
-    GtkWidget *box = gtk_vbox_new(FALSE, 0);
-    gtk_widget_show(box);
+    GtkWidget *tbl = gtk_table_new((TYPE_NR + 1) / 2, 2, TRUE);
+    gtk_widget_show(tbl);
     gtk_container_set_border_width(GTK_CONTAINER(box), 5);
-    gtk_container_add(GTK_CONTAINER(frame), box);
+    gtk_container_add(GTK_CONTAINER(frame), tbl);
     
+    gint x = 0, y = 0;
     for (gint type = 0; type < TYPE_NR; type++) {
 	char label[128];
 	snprintf(label, sizeof label, "%s %s", funcs[type].label, funcs[type].sublabel);
@@ -333,7 +334,13 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
 	gtk_widget_show(btn);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(btn), work[type].show);
 	g_signal_connect(btn, "toggled", G_CALLBACK(configure_toggled_cb), GSIZE_TO_POINTER(type));
-	gtk_box_pack_start(GTK_BOX(box), btn, FALSE, FALSE, 0);
+	gtk_table_attach_defaults(GTK_TABLE(tbl), btn, x, x + 1, y, y + 1);
+	if (++y == TYPE_NR / 2) {
+	    if (x == 0) {
+		x++;
+		y = 0;
+	    }
+	}
     }
     
     GtkWidget *fframe = gtk_frame_new("Font");
