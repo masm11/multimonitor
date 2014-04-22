@@ -90,6 +90,7 @@ void net_read_data(gint type)
     olddata[n][0] = r;
     olddata[n][1] = t;
     
+    // 最初のデータはゴミなので捨てる。
     if (!read_flag[n]) {
 	read_flag[n] = TRUE;
 	rx = tx = -1;
