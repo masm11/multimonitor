@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(multi-monitor, 2.2, masm@flowernet.gr.jp)
+AC_INIT(multi-monitor, 2.3, masm@flowernet.gr.jp)
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
 AC_CONFIG_SRCDIR([src/loadavg.c])
 AM_CONFIG_HEADER([config.h])
