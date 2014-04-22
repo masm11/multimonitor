@@ -36,6 +36,7 @@
 
 static int dir = -1;
 static GList *list[NCPU] = { NULL, };
+static gboolean read_flag[NCPU] = { FALSE, };
 static guint64 olddata[NCPU][NDATA];
 static gchar tooltip[NCPU][128];
 
@@ -82,6 +83,12 @@ void cpuload_read_data(gint type)
 	}
 	
 	fclose(fp);
+    }
+    
+    // 最初のデータはゴミなので捨てる。
+    if (!read_flag[n]) {
+	read_flag[n] = TRUE;
+	load = -1;
     }
     
     gdouble *p = g_new0(gdouble, 1);

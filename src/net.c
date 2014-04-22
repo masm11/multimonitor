@@ -50,6 +50,7 @@ static GList *list[NIF] = { NULL, };
 static gint64 olddata[NIF][2] = { { 0, }, };	// [0]:rx, [1]:tx
 static gint64 lastdata[NIF][2] = { { 0, }, };	// [0]:rx, [1]:tx
 static gdouble oldlevel[NIF] = { 0, };
+static gboolean read_flag[NIF] = { FALSE, };
 static gchar tooltip[NIF][128];
 static const char *ifnames[] = {
     "eth0",
@@ -88,6 +89,11 @@ void net_read_data(gint type)
     }
     olddata[n][0] = r;
     olddata[n][1] = t;
+    
+    if (!read_flag[n]) {
+	read_flag[n] = TRUE;
+	rx = tx = -1;
+    }
     
     lastdata[n][0] = rx;
     lastdata[n][1] = tx;
