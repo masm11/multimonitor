@@ -274,6 +274,22 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     gtk_container_add(GTK_CONTAINER(plugin), box);
 }
 
+static void set_label(void)
+{
+    PangoFontDescription *font_desc = pango_font_description_from_string(fontname);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	gtk_widget_modify_font(work[type].drawable, font_desc);
+	char label[128];
+	snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
+	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, label);
+	GdkColor color = (GdkColor) { .red = 0xffff, .green = 0xffff, .blue = 0xffff, };
+	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, &color);
+    }
+    
+    pango_font_description_free(font_desc);
+}
+
 static void configure_toggled_cb(GtkWidget *btn, gpointer data)
 {
     gint type = GPOINTER_TO_SIZE(data);
@@ -288,22 +304,7 @@ static void font_set_cb(GtkWidget *btn, gpointer data)
 {
     g_free(fontname);
     fontname = g_strdup(gtk_font_button_get_font_name(GTK_FONT_BUTTON(btn)));
-    PangoFontDescription *font_desc = pango_font_description_from_string(fontname);
-    
-    for (gint type = 0; type < TYPE_NR; type++) {
-	gtk_widget_modify_font(work[type].drawable, font_desc);
-	char label[128];
-	snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
-	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, label);
-	GdkColor color = {
-	    .red = 0xffff,
-	    .green = 0xffff,
-	    .blue = 0xffff,
-	};
-	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, &color);
-    }
-    
-    pango_font_description_free(font_desc);
+    set_label();
 }
 
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
@@ -415,22 +416,7 @@ static void plugin_start(XfcePanelPlugin *plg)
 	work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 40, 40);
     }
     
-    PangoFontDescription *font_desc = pango_font_description_from_string(fontname);
-    
-    for (gint type = 0; type < TYPE_NR; type++) {
-	gtk_widget_modify_font(work[type].drawable, font_desc);
-	char label[128];
-	snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
-	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, label);
-	GdkColor color = {
-	    .red = 0xffff,
-	    .green = 0xffff,
-	    .blue = 0xffff,
-	};
-	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, &color);
-    }
-    
-    pango_font_description_free(font_desc);
+    set_label();
     
     g_timeout_add(1000, timer, NULL);
     
