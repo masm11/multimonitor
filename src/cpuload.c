@@ -96,6 +96,16 @@ void cpuload_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
+static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, gdouble load, gint x)
+{
+    if (load >= 0) {
+	draw_line(pix, x, 0, h - 1, color_bg_normal);
+	draw_line(pix, x, h - h * load, h - 1, color_fg_normal);
+    } else {
+	draw_line(pix, x, 0, h - 1, color_err);
+    }
+}
+
 void cpuload_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_CPULOAD_0);
@@ -109,12 +119,7 @@ void cpuload_draw_1(gint type, GdkPixbuf *pix)
     gint w = gdk_pixbuf_get_width(pix);
     gint h = gdk_pixbuf_get_height(pix);
     
-    if (load >= 0) {
-	draw_line(pix, w - 1, 0, h - 1, color_bg_normal);
-	draw_line(pix, w - 1, h - h * load, h - 1, color_fg_normal);
-    } else {
-	draw_line(pix, w - 1, 0, h - 1, color_err);
-    }
+    draw_0(type, pix, w, h, load, w - 1);
 }
 
 void cpuload_draw_all(gint type, GdkPixbuf *pix)
@@ -128,16 +133,11 @@ void cpuload_draw_all(gint type, GdkPixbuf *pix)
     for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
 	gdouble load = *(gdouble *) lp->data;
 	
-	if (load >= 0) {
-	    draw_line(pix, x, 0, h - 1, color_bg_normal);
-	    draw_line(pix, x, h - h * load, h - 1, color_fg_normal);
-	} else {
-	    draw_line(pix, x, 0, h - 1, color_err);
-	}
+	draw_0(type, pix, w, h, load, x);
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, color_err);
+	draw_0(type, pix, w, h, -1, x);
 }
 
 void cpuload_discard_data(gint type, gint size)

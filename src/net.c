@@ -114,6 +114,22 @@ void net_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
+static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, struct log_t *p, gdouble level, gint x)
+{
+    if (p != NULL && p->logrx >= 0 && p->logtx >= 0) {
+	draw_line(pix, x, 0, h - 1, color_bg_normal);
+	draw_line(pix, x, h / 2 - h * p->logtx / level / 2, h / 2, color_fg_tx);
+	draw_line(pix, x, h / 2, h / 2 + h * p->logrx / level / 2, color_fg_rx);
+	
+	for (gint i = 0; i < level; i++)
+	    draw_point(pix, x, h / 2 - h * i / level / 2, color_err);
+	for (gint i = 0; i < level; i++)
+	    draw_point(pix, x, h / 2 + h * i / level / 2, color_err);
+    } else {
+	draw_line(pix, x, 0, h - 1, color_err);
+    }
+}
+
 void net_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_NET_ETH0);
@@ -144,18 +160,7 @@ void net_draw_1(gint type, GdkPixbuf *pix)
     if (lp != NULL)
 	p = lp->data;
     
-    if (p != NULL && p->logrx >= 0 && p->logtx >= 0) {
-	draw_line(pix, w - 1, 0, h - 1, color_bg_normal);
-	draw_line(pix, w - 1, h / 2 - h * p->logtx / level / 2, h / 2, color_fg_tx);
-	draw_line(pix, w - 1, h / 2, h / 2 + h * p->logrx / level / 2, color_fg_rx);
-	
-	for (gint i = 0; i < level; i++)
-	    draw_point(pix, w - 1, h / 2 - h * i / level / 2, color_err);
-	for (gint i = 0; i < level; i++)
-	    draw_point(pix, w - 1, h / 2 + h * i / level / 2, color_err);
-    } else {
-	draw_line(pix, w - 1, 0, h - 1, color_err);
-    }
+    draw_0(type, pix, w, h, p, level, w - 1);
 }
 
 void net_draw_all(gint type, GdkPixbuf *pix)
@@ -181,22 +186,11 @@ void net_draw_all(gint type, GdkPixbuf *pix)
     for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
 	struct log_t *p = (struct log_t *) lp->data;
 	
-	if (p->logrx >= 0 && p->logtx >= 0) {
-	    draw_line(pix, x, 0, h - 1, color_bg_normal);
-	    draw_line(pix, x, h / 2 - h * p->logtx / level / 2, h / 2, color_fg_tx);
-	    draw_line(pix, x, h / 2, h / 2 + h * p->logrx / level / 2, color_fg_rx);
-	    
-	    for (gint i = 0; i < level; i++)
-		draw_point(pix, x, h / 2 - h * i / level / 2, color_err);
-	    for (gint i = 0; i < level; i++)
-		draw_point(pix, x, h / 2 + h * i / level / 2, color_err);
-	} else {
-	    draw_line(pix, x, 0, h - 1, color_err);
-	}
+	draw_0(type, pix, w, h, p, level, x);
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, color_err);
+	draw_0(type, pix, w, h, NULL, level, x);
 }
 
 void net_discard_data(gint type, gint size)

@@ -60,6 +60,16 @@ void cpufreq_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
+static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, gint freq, gint max, gint x)
+{
+    if (freq >= 0) {
+	draw_line(pix, x, 0, h - 1, color_bg_normal);
+	draw_line(pix, x, h - h * freq / max, h - 1, color_fg_normal);
+    } else {
+	draw_line(pix, x, 0, h - 1, color_err);
+    }
+}
+
 void cpufreq_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_CPUFREQ_0);
@@ -73,12 +83,7 @@ void cpufreq_draw_1(gint type, GdkPixbuf *pix)
     gint w = gdk_pixbuf_get_width(pix);
     gint h = gdk_pixbuf_get_height(pix);
     
-    if (freq >= 0) {
-	draw_line(pix, w - 1, 0, h - 1, color_bg_normal);
-	draw_line(pix, w - 1, h - h * freq / maxfreq[n], h - 1, color_fg_normal);
-    } else {
-	draw_line(pix, w - 1, 0, h - 1, color_err);
-    }
+    draw_0(type, pix, w, h, freq, maxfreq[n], w - 1);
 }
 
 void cpufreq_draw_all(gint type, GdkPixbuf *pix)
@@ -92,16 +97,11 @@ void cpufreq_draw_all(gint type, GdkPixbuf *pix)
     for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
 	gint freq = *(gint *) lp->data;
 	
-	if (freq >= 0) {
-	    draw_line(pix, x, 0, h - 1, color_bg_normal);
-	    draw_line(pix, x, h - h * freq / maxfreq[n], h - 1, color_fg_normal);
-	} else {
-	    draw_line(pix, x, 0, h - 1, color_err);
-	}
+	draw_0(type, pix, w, h, freq, maxfreq[n], x);
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, color_err);
+	draw_0(type, pix, w, h, -1, maxfreq[n], x);
 }
 
 void cpufreq_discard_data(gint type, gint size)

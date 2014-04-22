@@ -42,17 +42,6 @@ struct data_t {
 static GList *list[NBATT] = { NULL, };
 static gchar tooltip[NBATT][128];
 
-static GdkColor bg2 = {
-    .red = 0x0000,
-    .green = 0x4040,
-    .blue = 0,
-};
-static GdkColor fg2 = {
-    .red = 0xffff,
-    .green = 0x4040,
-    .blue = 0,
-};
-
 void battery_init(void)
 {
     pow = open("/sys/class/power_supply", O_RDONLY);
@@ -75,6 +64,21 @@ void battery_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
+static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, struct data_t *p, gint x)
+{
+    if (p != NULL && p->capacity >= 0) {
+	GdkColor *bg = color_bg_normal, *fg = color_fg_normal;
+	if (p->charging) {
+	    bg = color_bg_charge;
+	    fg = color_fg_charge;
+	}
+	draw_line(pix, x, 0, h - 1, bg);
+	draw_line(pix, x, h - h * p->capacity / 100, h - 1, fg);
+    } else {
+	draw_line(pix, x, 0, h - 1, color_err);
+    }
+}
+
 void battery_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = type - TYPE_BATT_0;
@@ -88,17 +92,7 @@ void battery_draw_1(gint type, GdkPixbuf *pix)
     gint w = gdk_pixbuf_get_width(pix);
     gint h = gdk_pixbuf_get_height(pix);
     
-    if (p != NULL && p->capacity >= 0) {
-	GdkColor *bg = color_bg_normal, *fg = color_fg_normal;
-	if (p->charging) {
-	    bg = color_bg_charge;
-	    fg = color_fg_charge;
-	}
-	draw_line(pix, w - 1, 0, h - 1, bg);
-	draw_line(pix, w - 1, h - h * p->capacity / 100, h - 1, fg);
-    } else {
-	draw_line(pix, w - 1, 0, h - 1, color_err);
-    }
+    draw_0(type, pix, w, h, p, w - 1);
 }
 
 void battery_draw_all(gint type, GdkPixbuf *pix)
@@ -112,21 +106,11 @@ void battery_draw_all(gint type, GdkPixbuf *pix)
     for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
 	struct data_t *p = (struct data_t *) lp->data;
 	
-	if (p != NULL && p->capacity >= 0) {
-	    GdkColor *fg = color_fg_normal, *bg = color_bg_normal;
-	    if (p->charging) {
-		bg = color_bg_charge;
-		fg = color_fg_charge;
-	    }
-	    draw_line(pix, x, 0, h - 1, bg);
-	    draw_line(pix, x, h - h * p->capacity / 100, h - 1, fg);
-	} else {
-	    draw_line(pix, x, 0, h - 1, color_err);
-	}
+	draw_0(type, pix, w, h, p, x);
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, color_err);
+	draw_0(type, pix, w, h, NULL, x);
 }
 
 void battery_discard_data(gint type, gint size)

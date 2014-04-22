@@ -79,6 +79,19 @@ void loadavg_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
+static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, gdouble load, gdouble level, gint x)
+{
+    if (load >= 0) {
+	draw_line(pix, x, 0, h - 1, color_bg_normal);
+	draw_line(pix, x, h - h * load / level, h - 1, color_fg_normal);
+	
+	for (gint i = 1; i < level; i++)
+	    draw_point(pix, x, h - h * i / level, color_err);
+    } else {
+	draw_line(pix, x, 0, h - 1, color_err);
+    }
+}
+
 void loadavg_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_LOADAVG_1);
@@ -106,16 +119,7 @@ void loadavg_draw_1(gint type, GdkPixbuf *pix)
     if (lp != NULL)
 	load = *(gdouble *) lp->data;
     
-    if (load >= 0) {
-	draw_line(pix, w - 1, 0, h - 1, color_bg_normal);
-	draw_line(pix, w - 1, h - h * load / level, h - 1, color_fg_normal);
-	
-	for (gint i = 1; i < level; i++) {
-	    draw_point(pix, w - 1, h - h * i / level, color_err);
-	}
-    } else {
-	draw_line(pix, w - 1, 0, h - 1, color_err);
-    }
+    draw_0(type, pix, w, h, load, level, w - 1);
 }
 
 void loadavg_draw_all(gint type, GdkPixbuf *pix)
@@ -138,20 +142,11 @@ void loadavg_draw_all(gint type, GdkPixbuf *pix)
     for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
 	gdouble load = *(gdouble *) lp->data;
 	
-	if (load >= 0) {
-	    draw_line(pix, x, 0, h - 1, color_bg_normal);
-	    draw_line(pix, x, h - h * load / level, h - 1, color_fg_normal);
-	    
-	    for (gint i = 1; i < level; i++) {
-		draw_point(pix, x, h - h * i / level, color_err);
-	    }
-	} else {
-	    draw_line(pix, x, 0, h - 1, color_err);
-	}
+	draw_0(type, pix, w, h, load, level, x);
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, color_err);
+	draw_0(type, pix, w, h, -1, level, x);
 }
 
 void loadavg_discard_data(gint type, gint size)
