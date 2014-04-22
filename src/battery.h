@@ -20,8 +20,8 @@
 
 void battery_init(void);
 void battery_read_data(gint type);
-void battery_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err);
-void battery_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err);
+void battery_draw_1(gint type, GdkPixbuf *pix);
+void battery_draw_all(gint type, GdkPixbuf *pix);
 void battery_discard_data(gint type, gint size);
 const gchar *battery_tooltip(gint type);
 

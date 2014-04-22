@@ -18,6 +18,15 @@
 #ifndef DRAW_H__INCLUDED
 #define DRAW_H__INCLUDED
 
+extern GdkColor *color_err;
+extern GdkColor *color_bg_normal;
+extern GdkColor *color_fg_normal;
+extern GdkColor *color_bg_charge;
+extern GdkColor *color_fg_charge;
+extern GdkColor *color_fg_tx;
+extern GdkColor *color_fg_rx;
+extern GdkColor *color_text;
+
 void draw_line(GdkPixbuf *pix,
 	gint x, gint y1, gint y2,
 	GdkColor *color);

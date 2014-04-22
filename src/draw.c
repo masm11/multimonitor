@@ -21,6 +21,19 @@
 #include <gdk/gdk.h>
 #include "draw.h"
 
+#define DEFINE_COLOR(name, r, g, b) \
+  static GdkColor name = { .red = r, .green = g, .blue = b }; \
+  GdkColor *color_##name = &name;
+
+DEFINE_COLOR(err,       0x8080, 0x8080, 0x8080)
+DEFINE_COLOR(bg_normal, 0x0000, 0x0000, 0x0000)
+DEFINE_COLOR(fg_normal, 0xffff, 0x0000, 0x0000)
+DEFINE_COLOR(bg_charge, 0x0000, 0x4040, 0x0000)
+DEFINE_COLOR(fg_charge, 0xffff, 0x4040, 0x0000)
+DEFINE_COLOR(fg_tx,     0xffff, 0x0000, 0x0000)
+DEFINE_COLOR(fg_rx,     0x0000, 0xffff, 0x0000)
+DEFINE_COLOR(text,      0xffff, 0xffff, 0xffff)
+
 void draw_line(GdkPixbuf *pix,
 	gint x, gint y1, gint y2,
 	GdkColor *color)

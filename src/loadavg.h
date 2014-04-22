@@ -20,9 +20,9 @@
 
 void loadavg_init(void);
 void loadavg_read_data(gint type);
-void loadavg_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err);
+void loadavg_draw_1(gint type, GdkPixbuf *pix);
+void loadavg_draw_all(gint type, GdkPixbuf *pix);
 void loadavg_discard_data(gint type, gint size);
-void loadavg_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err);
 const gchar *loadavg_tooltip(gint type);
 
 #endif	/* ifndef LOADAVG_H__INCLUDED */

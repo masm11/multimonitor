@@ -20,8 +20,8 @@
 
 void cpuload_init(void);
 void cpuload_read_data(gint type);
-void cpuload_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err);
-void cpuload_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err);
+void cpuload_draw_1(gint type, GdkPixbuf *pix);
+void cpuload_draw_all(gint type, GdkPixbuf *pix);
 void cpuload_discard_data(gint type, gint size);
 const gchar *cpuload_tooltip(gint type);
 

@@ -60,7 +60,7 @@ void cpufreq_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
-void cpufreq_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+void cpufreq_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_CPUFREQ_0);
     
@@ -74,14 +74,14 @@ void cpufreq_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkCo
     gint h = gdk_pixbuf_get_height(pix);
     
     if (freq >= 0) {
-	draw_line(pix, w - 1, 0, h - 1, bg);
-	draw_line(pix, w - 1, h - h * freq / maxfreq[n], h - 1, fg);
+	draw_line(pix, w - 1, 0, h - 1, color_bg_normal);
+	draw_line(pix, w - 1, h - h * freq / maxfreq[n], h - 1, color_fg_normal);
     } else {
-	draw_line(pix, w - 1, 0, h - 1, err);
+	draw_line(pix, w - 1, 0, h - 1, color_err);
     }
 }
 
-void cpufreq_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+void cpufreq_draw_all(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_CPUFREQ_0);
     
@@ -93,15 +93,15 @@ void cpufreq_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, Gdk
 	gint freq = *(gint *) lp->data;
 	
 	if (freq >= 0) {
-	    draw_line(pix, x, 0, h - 1, bg);
-	    draw_line(pix, x, h - h * freq / maxfreq[n], h - 1, fg);
+	    draw_line(pix, x, 0, h - 1, color_bg_normal);
+	    draw_line(pix, x, h - h * freq / maxfreq[n], h - 1, color_fg_normal);
 	} else {
-	    draw_line(pix, x, 0, h - 1, err);
+	    draw_line(pix, x, 0, h - 1, color_err);
 	}
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, err);
+	draw_line(pix, x, 0, h - 1, color_err);
 }
 
 void cpufreq_discard_data(gint type, gint size)

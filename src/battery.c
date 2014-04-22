@@ -75,7 +75,7 @@ void battery_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
-void battery_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+void battery_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = type - TYPE_BATT_0;
     
@@ -89,18 +89,19 @@ void battery_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkCo
     gint h = gdk_pixbuf_get_height(pix);
     
     if (p != NULL && p->capacity >= 0) {
+	GdkColor *bg = color_bg_normal, *fg = color_fg_normal;
 	if (p->charging) {
-	    bg = &bg2;
-	    fg = &fg2;
+	    bg = color_bg_charge;
+	    fg = color_fg_charge;
 	}
 	draw_line(pix, w - 1, 0, h - 1, bg);
 	draw_line(pix, w - 1, h - h * p->capacity / 100, h - 1, fg);
     } else {
-	draw_line(pix, w - 1, 0, h - 1, err);
+	draw_line(pix, w - 1, 0, h - 1, color_err);
     }
 }
 
-void battery_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+void battery_draw_all(gint type, GdkPixbuf *pix)
 {
     int n = type - TYPE_BATT_0;
     
@@ -112,19 +113,20 @@ void battery_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, Gdk
 	struct data_t *p = (struct data_t *) lp->data;
 	
 	if (p != NULL && p->capacity >= 0) {
+	    GdkColor *fg = color_fg_normal, *bg = color_bg_normal;
 	    if (p->charging) {
-		bg = &bg2;
-		fg = &fg2;
+		bg = color_bg_charge;
+		fg = color_fg_charge;
 	    }
 	    draw_line(pix, x, 0, h - 1, bg);
 	    draw_line(pix, x, h - h * p->capacity / 100, h - 1, fg);
 	} else {
-	    draw_line(pix, x, 0, h - 1, err);
+	    draw_line(pix, x, 0, h - 1, color_err);
 	}
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, err);
+	draw_line(pix, x, 0, h - 1, color_err);
 }
 
 void battery_discard_data(gint type, gint size)

@@ -41,15 +41,14 @@ static struct {
     PangoLayout *layout;
     gboolean show;
 } work[TYPE_NR];
-static GdkColor bg, fg, err;
 static char *fontname;
 
 static struct {
     const char *label, *sublabel;
     gint interval;
     void (*read_data)(gint);
-    void (*draw_1)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
-    void (*draw_all)(gint, GdkPixbuf *, GdkColor *, GdkColor *, GdkColor *);
+    void (*draw_1)(gint, GdkPixbuf *);
+    void (*draw_all)(gint, GdkPixbuf *);
     void (*discard_data)(gint, gint);
     const gchar *(*tooltip)(gint);
 } funcs[] = {
@@ -129,7 +128,7 @@ static gboolean timer(gpointer data)
     draw_shift(work[type].pix);
     
     // 右端の 1dot を描画
-    (*funcs[type].draw_1)(type, work[type].pix, &bg, &fg, &err);
+    (*funcs[type].draw_1)(type, work[type].pix);
     
     // widget に描画
     draw_to_widget(type);
@@ -216,7 +215,7 @@ static void change_size_iter(gint type, gint size)
 	g_object_unref(work[type].pix);
     work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, size);
     
-    (*funcs[type].draw_all)(type, work[type].pix, &bg, &fg, &err);
+    (*funcs[type].draw_all)(type, work[type].pix);
 }
 
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
@@ -278,8 +277,7 @@ static void set_label(void)
 	char label[128];
 	snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
 	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, label);
-	GdkColor color = (GdkColor) { .red = 0xffff, .green = 0xffff, .blue = 0xffff, };
-	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, &color);
+	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, color_text);
     }
     
     pango_font_description_free(font_desc);
@@ -385,10 +383,6 @@ static void plugin_start(XfcePanelPlugin *plg)
     gtk_widget_show(box);
     gtk_container_add(GTK_CONTAINER(plugin), box);
     xfce_panel_plugin_add_action_widget(plugin, box);
-    
-    bg = (GdkColor) { .red = 0, .green = 0, .blue = 0 };
-    fg = (GdkColor) { .red = 65535, .green = 0, .blue = 0 };
-    err = (GdkColor) { .red = 32768, .green = 32768, .blue = 32768 };
     
     load_config();
     

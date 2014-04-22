@@ -114,15 +114,9 @@ void net_read_data(gint type)
     list[n] = g_list_prepend(list[n], p);
 }
 
-void net_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+void net_draw_1(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_NET_ETH0);
-    
-    GdkColor fg2 = {
-	.red = 0,
-	.green = 65535,
-	.blue = 0,
-    };
     
     gdouble level = 1;
     
@@ -138,7 +132,7 @@ void net_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor 
     
     if (oldlevel[n] != level) {
 	oldlevel[n] = level;
-	net_draw_all(type, pix, bg, fg, err);
+	net_draw_all(type, pix);
 	return;
     }
     
@@ -151,28 +145,22 @@ void net_draw_1(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor 
 	p = lp->data;
     
     if (p != NULL && p->logrx >= 0 && p->logtx >= 0) {
-	draw_line(pix, w - 1, 0, h - 1, bg);
-	draw_line(pix, w - 1, h / 2 - h * p->logtx / level / 2, h / 2, fg);
-	draw_line(pix, w - 1, h / 2, h / 2 + h * p->logrx / level / 2, &fg2);
+	draw_line(pix, w - 1, 0, h - 1, color_bg_normal);
+	draw_line(pix, w - 1, h / 2 - h * p->logtx / level / 2, h / 2, color_fg_tx);
+	draw_line(pix, w - 1, h / 2, h / 2 + h * p->logrx / level / 2, color_fg_rx);
 	
 	for (gint i = 0; i < level; i++)
-	    draw_point(pix, w - 1, h / 2 - h * i / level / 2, err);
+	    draw_point(pix, w - 1, h / 2 - h * i / level / 2, color_err);
 	for (gint i = 0; i < level; i++)
-	    draw_point(pix, w - 1, h / 2 + h * i / level / 2, err);
+	    draw_point(pix, w - 1, h / 2 + h * i / level / 2, color_err);
     } else {
-	draw_line(pix, w - 1, 0, h - 1, err);
+	draw_line(pix, w - 1, 0, h - 1, color_err);
     }
 }
 
-void net_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColor *err)
+void net_draw_all(gint type, GdkPixbuf *pix)
 {
     int n = (type - TYPE_NET_ETH0);
-    
-    GdkColor fg2 = {
-	.red = 0,
-	.green = 65535,
-	.blue = 0,
-    };
     
     gdouble level = 1;
     
@@ -194,21 +182,21 @@ void net_draw_all(gint type, GdkPixbuf *pix, GdkColor *bg, GdkColor *fg, GdkColo
 	struct log_t *p = (struct log_t *) lp->data;
 	
 	if (p->logrx >= 0 && p->logtx >= 0) {
-	    draw_line(pix, x, 0, h - 1, bg);
-	    draw_line(pix, x, h / 2 - h * p->logtx / level / 2, h / 2, fg);
-	    draw_line(pix, x, h / 2, h / 2 + h * p->logrx / level / 2, &fg2);
+	    draw_line(pix, x, 0, h - 1, color_bg_normal);
+	    draw_line(pix, x, h / 2 - h * p->logtx / level / 2, h / 2, color_fg_tx);
+	    draw_line(pix, x, h / 2, h / 2 + h * p->logrx / level / 2, color_fg_rx);
 	    
 	    for (gint i = 0; i < level; i++)
-		draw_point(pix, x, h / 2 - h * i / level / 2, err);
+		draw_point(pix, x, h / 2 - h * i / level / 2, color_err);
 	    for (gint i = 0; i < level; i++)
-		draw_point(pix, x, h / 2 + h * i / level / 2, err);
+		draw_point(pix, x, h / 2 + h * i / level / 2, color_err);
 	} else {
-	    draw_line(pix, x, 0, h - 1, err);
+	    draw_line(pix, x, 0, h - 1, color_err);
 	}
     }
     
     for ( ; x >= 0; x--)
-	draw_line(pix, x, 0, h - 1, err);
+	draw_line(pix, x, 0, h - 1, color_err);
 }
 
 void net_discard_data(gint type, gint size)
