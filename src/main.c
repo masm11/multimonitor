@@ -42,6 +42,7 @@ static struct {
     gboolean show;
 } work[TYPE_NR];
 static char *fontname;
+static gint graph_size;
 
 static struct {
     const char *label, *sublabel;
@@ -144,6 +145,11 @@ static gboolean timer(gpointer data)
     return TRUE;
 }
 
+static inline gboolean is_vert(XfcePanelPlugin *plugin)
+{
+    return xfce_panel_plugin_get_orientation(plugin) == GTK_ORIENTATION_VERTICAL;
+}
+
 static gboolean expose_cb(GtkWidget *widget, GdkEventExpose *event, gpointer user_data)
 {
     gint type = GPOINTER_TO_SIZE(user_data);
@@ -173,6 +179,8 @@ static void save_config_cb(XfcePanelPlugin *plugin, gpointer data)
     
     xfce_rc_write_entry(rc, "fontname", fontname);
     
+    xfce_rc_write_int_entry(rc, "size", graph_size);
+    
     xfce_rc_close(rc);
 }
 
@@ -183,6 +191,7 @@ static void load_config(void)
     for (gint type = 0; type < TYPE_NR; type++)
 	work[type].show = TRUE;
     fontname = g_strdup("sans 8");
+    graph_size = 40;
     
     gchar *rcfile = xfce_panel_plugin_save_location(plugin, FALSE);
     if (rcfile == NULL)
@@ -203,17 +212,25 @@ static void load_config(void)
     g_free(fontname);
     fontname = g_strdup(xfce_rc_read_entry(rc, "fontname", "sans 8"));
     
+    graph_size = xfce_rc_read_int_entry(rc, "size", 40);
+    
     xfce_rc_close(rc);
 }
 
-static void change_size_iter(gint type, gint size)
+static void change_size_iter(XfcePanelPlugin *plugin, gint type, gint size)
 {
-    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, size);
-    gtk_widget_queue_resize(work[type].drawable);
+    if (is_vert(plugin))
+	gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, graph_size);
+    else
+	gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), graph_size, size);
     
     if (work[type].pix != NULL)
 	g_object_unref(work[type].pix);
-    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, size);
+    
+    if (is_vert(plugin))
+	work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, graph_size);
+    else
+	work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, graph_size, size);
     
     (*funcs[type].draw_all)(type, work[type].pix);
 }
@@ -221,7 +238,7 @@ static void change_size_iter(gint type, gint size)
 static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
 {
     for (gint type = 0; type < TYPE_NR; type++)
-	change_size_iter(type, size);
+	change_size_iter(XFCE_PANEL_PLUGIN(w), type, size);
     
     return TRUE;
 }
@@ -239,29 +256,30 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     
     gtk_widget_show(box);
     
-    GList *list = gtk_container_get_children(GTK_CONTAINER(oldbox));
-    while (list != NULL) {
-	GtkWidget *w = list->data;
+    gint size = xfce_panel_plugin_get_size(plugin);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	GtkWidget *w = work[type].drawable;
+	GtkWidget *ev = work[type].ev;
 	
-	g_object_ref(w);
+	g_object_ref(ev);
 	
-	gtk_container_remove(GTK_CONTAINER(oldbox), w);
+	gtk_container_remove(GTK_CONTAINER(oldbox), ev);
 	
-	gint width, height;
-	gtk_widget_get_size_request(w, &width, &height);
-	if ((orientation == GTK_ORIENTATION_HORIZONTAL && width == -1) ||
-		(orientation == GTK_ORIENTATION_VERTICAL && height == -1)) {
-	    gint t = width;
-	    width = height;
-	    height = t;
-	}
-	gtk_widget_set_size_request(w, width, height);
+	if (is_vert(plugin))
+	    gtk_drawing_area_size(GTK_DRAWING_AREA(w), size, graph_size);
+	else
+	    gtk_drawing_area_size(GTK_DRAWING_AREA(w), graph_size, size);
 	
-	gtk_box_pack_start(GTK_BOX(box), w, FALSE, FALSE, 0);
+	if (is_vert(plugin))
+	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, graph_size);
+	else
+	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, graph_size, size);
+	(*funcs[type].draw_all)(type, work[type].pix);
 	
-	g_object_unref(w);
+	gtk_box_pack_start(GTK_BOX(box), ev, FALSE, FALSE, 0);
 	
-	list = g_list_delete_link(list, list);
+	g_object_unref(ev);
     }
     
     gtk_widget_destroy(oldbox);
@@ -298,6 +316,29 @@ static void font_set_cb(GtkWidget *btn, gpointer data)
     g_free(fontname);
     fontname = g_strdup(gtk_font_button_get_font_name(GTK_FONT_BUTTON(btn)));
     set_label();
+}
+
+static void size_set_cb(GtkWidget *btn, gpointer data)
+{
+    graph_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(btn));
+    gint size = xfce_panel_plugin_get_size(plugin);
+    
+    for (gint type = 0; type < TYPE_NR; type++) {
+	if (is_vert(plugin))
+	    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, graph_size);
+	else
+	    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), graph_size, size);
+	
+	if (work[type].pix != NULL)
+	    g_object_unref(work[type].pix);
+	
+	if (is_vert(plugin))
+	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, graph_size);
+	else
+	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, graph_size, size);
+	
+	(*funcs[type].draw_all)(type, work[type].pix);
+    }
 }
 
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
@@ -348,6 +389,17 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     gtk_font_button_set_font_name(GTK_FONT_BUTTON(fbtn), fontname);
     g_signal_connect(G_OBJECT(fbtn), "font-set", G_CALLBACK(font_set_cb), NULL);
     
+    GtkWidget *sframe = gtk_frame_new("Size");
+    gtk_widget_show(sframe);
+    gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), sframe, FALSE, FALSE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(sframe), 5);
+    
+    GtkWidget *sbtn = gtk_spin_button_new_with_range(1, 1000, 1);
+    gtk_widget_show(sbtn);
+    gtk_container_add(GTK_CONTAINER(sframe), sbtn);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(sbtn), graph_size);
+    g_signal_connect(G_OBJECT(sbtn), "value-changed", G_CALLBACK(size_set_cb), NULL);
+    
     GtkWidget *sep = gtk_hseparator_new();
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), sep, FALSE, FALSE, 0);
     gtk_widget_show(sep);
@@ -389,13 +441,18 @@ static void plugin_start(XfcePanelPlugin *plg)
     GtkSettings *settings = gtk_settings_get_for_screen(gdk_screen_get_default());
     gtk_settings_set_long_property(settings, "gtk-tooltip-timeout", 100, "multi-monitor");
     
+    gint size = xfce_panel_plugin_get_size(plugin);
+    
     for (gint type = 0; type < TYPE_NR; type++) {
 	work[type].ev = gtk_event_box_new();
 	gtk_box_pack_start(GTK_BOX(box), work[type].ev, FALSE, FALSE, 0);
 	xfce_panel_plugin_add_action_widget(plugin, work[type].ev);
 	
 	work[type].drawable = gtk_drawing_area_new();
-	gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), 40, 40);
+	if (is_vert(plugin))
+	    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, graph_size);
+	else
+	    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), graph_size, size);
 	gtk_widget_show(work[type].drawable);
 	gtk_container_add(GTK_CONTAINER(work[type].ev), work[type].drawable);
 	g_signal_connect(work[type].drawable, "expose-event", G_CALLBACK(expose_cb), GSIZE_TO_POINTER(type));
@@ -405,7 +462,10 @@ static void plugin_start(XfcePanelPlugin *plg)
 	else
 	    gtk_widget_hide(work[type].ev);
 	
-	work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, 40, 40);
+	if (is_vert(plugin))
+	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, graph_size);
+	else
+	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, graph_size, size);
 	
 	g_timeout_add(funcs[type].interval, timer, GSIZE_TO_POINTER(type));
     }
