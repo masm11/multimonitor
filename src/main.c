@@ -235,10 +235,15 @@ static void change_size_iter(XfcePanelPlugin *plugin, gint type, gint size)
     (*funcs[type].draw_all)(type, work[type].pix);
 }
 
-static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
+static void change_size(XfcePanelPlugin *plugin, gint size)
 {
     for (gint type = 0; type < TYPE_NR; type++)
-	change_size_iter(XFCE_PANEL_PLUGIN(w), type, size);
+	change_size_iter(plugin, type, size);
+}
+
+static gboolean change_size_cb(GtkWidget *w, gint size, gpointer closure)
+{
+    change_size(XFCE_PANEL_PLUGIN(w), size);
     
     return TRUE;
 }
@@ -259,23 +264,13 @@ static void change_orient_cb(XfcePanelPlugin *plugin, GtkOrientation orientation
     gint size = xfce_panel_plugin_get_size(plugin);
     
     for (gint type = 0; type < TYPE_NR; type++) {
-	GtkWidget *w = work[type].drawable;
 	GtkWidget *ev = work[type].ev;
 	
 	g_object_ref(ev);
 	
 	gtk_container_remove(GTK_CONTAINER(oldbox), ev);
 	
-	if (is_vert(plugin))
-	    gtk_drawing_area_size(GTK_DRAWING_AREA(w), size, graph_size);
-	else
-	    gtk_drawing_area_size(GTK_DRAWING_AREA(w), graph_size, size);
-	
-	if (is_vert(plugin))
-	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, graph_size);
-	else
-	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, graph_size, size);
-	(*funcs[type].draw_all)(type, work[type].pix);
+	change_size_iter(plugin, type, size);
 	
 	gtk_box_pack_start(GTK_BOX(box), ev, FALSE, FALSE, 0);
 	
@@ -323,22 +318,7 @@ static void size_set_cb(GtkWidget *btn, gpointer data)
     graph_size = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(btn));
     gint size = xfce_panel_plugin_get_size(plugin);
     
-    for (gint type = 0; type < TYPE_NR; type++) {
-	if (is_vert(plugin))
-	    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), size, graph_size);
-	else
-	    gtk_drawing_area_size(GTK_DRAWING_AREA(work[type].drawable), graph_size, size);
-	
-	if (work[type].pix != NULL)
-	    g_object_unref(work[type].pix);
-	
-	if (is_vert(plugin))
-	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, size, graph_size);
-	else
-	    work[type].pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, FALSE, 8, graph_size, size);
-	
-	(*funcs[type].draw_all)(type, work[type].pix);
-    }
+    change_size(plugin, size);
 }
 
 static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
