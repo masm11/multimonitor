@@ -26,6 +26,9 @@ extern GdkColor *color_fg_charge;
 extern GdkColor *color_fg_tx;
 extern GdkColor *color_fg_rx;
 extern GdkColor *color_text;
+extern GdkColor *color_fg_kernel;
+extern GdkColor *color_fg_cached;
+extern GdkColor *color_fg_buffers;
 
 void draw_line(GdkPixbuf *pix,
 	gint x, gint y1, gint y2,

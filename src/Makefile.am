@@ -18,6 +18,8 @@ multi_monitor_SOURCES = \
     cpuload.h		\
     net.c		\
     net.h		\
+    memory.c		\
+    memory.h		\
     list.c		\
     list.h		\
     draw.c		\

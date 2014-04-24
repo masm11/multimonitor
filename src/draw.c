@@ -33,6 +33,9 @@ DEFINE_COLOR(fg_charge, 0xffff, 0x4040, 0x0000)
 DEFINE_COLOR(fg_tx,     0xffff, 0x0000, 0x0000)
 DEFINE_COLOR(fg_rx,     0x0000, 0xffff, 0x0000)
 DEFINE_COLOR(text,      0xffff, 0xffff, 0xffff)
+DEFINE_COLOR(fg_kernel, 0xffff, 0x8080, 0x8080)
+DEFINE_COLOR(fg_cached, 0xffff, 0x0000, 0x0000)
+DEFINE_COLOR(fg_buffers,0x8080, 0x4040, 0x0000)
 
 void draw_line(GdkPixbuf *pix,
 	gint x, gint y1, gint y2,

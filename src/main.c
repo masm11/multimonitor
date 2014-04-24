@@ -28,6 +28,7 @@
 #include "loadavg.h"
 #include "cpuload.h"
 #include "net.h"
+#include "memory.h"
 #include "draw.h"
 #include "main.h"
 
@@ -73,6 +74,7 @@ static struct {
     FUNC("Network",  "wlan0", 1000, net),
     FUNC("Network",  "ath0",  1000, net),
     FUNC("Network",  "lo",    1000, net),
+    FUNC("Memory",   "memory",1000, mem),
 #undef FUNC
 };
 
@@ -457,6 +459,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     loadavg_init();
     cpuload_init();
     net_init();
+    mem_init();
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)

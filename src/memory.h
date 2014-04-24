@@ -15,37 +15,14 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef TYPES_H__INCLUDED
-#define TYPES_H__INCLUDED
+#ifndef MEMORY_H__INCLUDED
+#define MEMORY_H__INCLUDED
 
-enum {
-    TYPE_BATT_0,
-    TYPE_BATT_1,
-    
-    TYPE_CPUFREQ_0,
-    TYPE_CPUFREQ_1,
-    TYPE_CPUFREQ_2,
-    TYPE_CPUFREQ_3,
-    
-    TYPE_LOADAVG_1,
-    TYPE_LOADAVG_5,
-    TYPE_LOADAVG_15,
-    
-    TYPE_CPULOAD_0,
-    TYPE_CPULOAD_1,
-    TYPE_CPULOAD_2,
-    TYPE_CPULOAD_3,
-    
-    TYPE_NET_ETH0,
-    TYPE_NET_ETH1,
-    TYPE_NET_ETH2,
-    TYPE_NET_WLAN0,
-    TYPE_NET_ATH0,
-    TYPE_NET_LO,
-    
-    TYPE_MEM,
-    
-    TYPE_NR
-};
+void mem_init(void);
+void mem_read_data(gint type);
+void mem_draw_1(gint type, GdkPixbuf *pix);
+void mem_draw_all(gint type, GdkPixbuf *pix);
+void mem_discard_data(gint type, gint size);
+const gchar *mem_tooltip(gint type);
 
-#endif	/* ifndef TYPES_H__INCLUDED */
+#endif	/* ifndef MEMORY_H__INCLUDED */
