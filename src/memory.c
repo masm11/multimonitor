@@ -36,6 +36,7 @@
 struct data_t {
     gint64 total;
     gint64 free;
+    gint64 anon;
     gint64 buffers;
     gint64 cached;
     gint64 kernel;
@@ -75,12 +76,14 @@ void mem_read_data(gint type)
 		    data.buffers = value;
 		else if (strcmp(name, "Cached:") == 0)
 		    data.cached = value;
+		else if (strcmp(name, "AnonPages:") == 0)
+		    data.anon = value;
 	    }
 	}
 	
 	fclose(fp);
 	
-	data.kernel = data.total - data.free - data.buffers - data.cached;
+	data.kernel = data.total - data.free - data.anon - data.buffers - data.cached;
     }
     
     struct data_t *p = g_new0(struct data_t, 1);
@@ -92,6 +95,7 @@ static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, struct data_t *p, 
 {
     if (p != NULL && p->total >= 0) {
 	draw_line(pix, x, 0, h - 1, color_bg_normal);
+	draw_line(pix, x, h - h * (p->anon + p->buffers + p->cached + p->kernel) / p->total, h - 1, color_fg_anon);
 	draw_line(pix, x, h - h * (p->buffers + p->cached + p->kernel) / p->total, h - 1, color_fg_buffers);
 	draw_line(pix, x, h - h * (p->cached + p->kernel) / p->total, h - 1, color_fg_cached);
 	draw_line(pix, x, h - h * (p->kernel) / p->total, h - 1, color_fg_kernel);
@@ -142,7 +146,8 @@ const gchar *mem_tooltip(gint type)
     if (p == NULL)
 	return NULL;
     snprintf(tooltip, sizeof tooltip,
-	    "Buffers:%.1fMB\nCached:%.1fMB\nKernel:%.1fMB",
+	    "Anon:%.1fMB\nBuffers:%.1fMB\nCached:%.1fMB\nKernel:%.1fMB",
+	    (gdouble) p->anon / 1024,
 	    (gdouble) p->buffers / 1024,
 	    (gdouble) p->cached / 1024,
 	    (gdouble) p->kernel / 1024);

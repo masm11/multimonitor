@@ -27,6 +27,7 @@ extern GdkColor *color_fg_tx;
 extern GdkColor *color_fg_rx;
 extern GdkColor *color_text;
 extern GdkColor *color_fg_kernel;
+extern GdkColor *color_fg_anon;
 extern GdkColor *color_fg_cached;
 extern GdkColor *color_fg_buffers;
 
