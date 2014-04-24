@@ -74,7 +74,7 @@ static struct {
     FUNC("Network",  "wlan0", 1000, net),
     FUNC("Network",  "ath0",  1000, net),
     FUNC("Network",  "lo",    1000, net),
-    FUNC("Memory",   "memory",1000, mem),
+    FUNC("Memory",   NULL,    1000, mem),
 #undef FUNC
 };
 
@@ -290,7 +290,10 @@ static void set_label(void)
     for (gint type = 0; type < TYPE_NR; type++) {
 	gtk_widget_modify_font(work[type].drawable, font_desc);
 	char label[128];
-	snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
+	if (funcs[type].sublabel != NULL)
+	    snprintf(label, sizeof label, "%s\n%s", funcs[type].label, funcs[type].sublabel);
+	else
+	    snprintf(label, sizeof label, "%s", funcs[type].label);
 	work[type].layout = gtk_widget_create_pango_layout(work[type].drawable, label);
 	gtk_widget_modify_text(work[type].drawable, GTK_STATE_NORMAL, color_text);
     }
@@ -346,7 +349,10 @@ static void configure_cb(XfcePanelPlugin *plugin, gpointer data)
     gint x = 0, y = 0;
     for (gint type = 0; type < TYPE_NR; type++) {
 	char label[128];
-	snprintf(label, sizeof label, "%s %s", funcs[type].label, funcs[type].sublabel);
+	if (funcs[type].sublabel != NULL)
+	    snprintf(label, sizeof label, "%s %s", funcs[type].label, funcs[type].sublabel);
+	else
+	    snprintf(label, sizeof label, "%s", funcs[type].label);
 	GtkWidget *btn = gtk_check_button_new_with_label(label);
 	gtk_widget_show(btn);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(btn), work[type].show);
