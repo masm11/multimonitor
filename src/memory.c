@@ -138,6 +138,15 @@ void mem_discard_data(gint type, gint size)
     list = list_truncate(list, size);
 }
 
+static gint append_usage(gchar *buf, gint bufsiz, const gchar *label, gint64 size)
+{
+    if (size >= 1024 * 1024)
+	return snprintf(buf, bufsiz, "%s:%.1fGB\n", label, (gdouble) size / 1024 / 1024);
+    if (size >= 1024)
+	return snprintf(buf, bufsiz, "%s:%.1fMB\n", label, (gdouble) size / 1024);
+    return snprintf(buf, bufsiz, "%s:%dKB\n", label, (gint) size);
+}
+
 const gchar *mem_tooltip(gint type)
 {
     struct data_t *p = NULL;
@@ -145,11 +154,29 @@ const gchar *mem_tooltip(gint type)
 	p = list->data;
     if (p == NULL)
 	return NULL;
-    snprintf(tooltip, sizeof tooltip,
-	    "Anon:%.1fMB\nBuffers:%.1fMB\nCached:%.1fMB\nKernel:%.1fMB",
-	    (gdouble) p->anon / 1024,
-	    (gdouble) p->buffers / 1024,
-	    (gdouble) p->cached / 1024,
-	    (gdouble) p->kernel / 1024);
+    gchar *tp = tooltip;
+    gint ts = sizeof tooltip;
+    gint s;
+    
+    s = append_usage(tp, ts, "Anon", p->anon);
+    tp += s;
+    ts -= s;
+    
+    s = append_usage(tp, ts, "Buffers", p->buffers);
+    tp += s;
+    ts -= s;
+    
+    s = append_usage(tp, ts, "Cached", p->cached);
+    tp += s;
+    ts -= s;
+    
+    s = append_usage(tp, ts, "Kernel", p->kernel);
+    tp += s;
+    ts -= s;
+    
+    gint len = strlen(tooltip);
+    if (len > 0 && tooltip[len - 1] == '\n')
+	tooltip[len - 1] = '\0';
+    
     return tooltip;
 }
