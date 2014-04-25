@@ -57,7 +57,7 @@ void mem_read_data(gint type)
 	return;
     
     struct data_t data;
-    data.total = data.free = data.buffers = data.cached = data.kernel = 0;
+    data.total = data.anon = data.free = data.buffers = data.cached = data.kernel = 0;
     
     int fd = openat(dir, "meminfo", O_RDONLY);
     if (fd >= 0) {
@@ -93,7 +93,7 @@ void mem_read_data(gint type)
 
 static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, struct data_t *p, gint x)
 {
-    if (p != NULL && p->total >= 0) {
+    if (p != NULL && p->total > 0) {	// 読めなかったタイミングが存在する。
 	draw_line(pix, x, 0, h - 1, color_bg_normal);
 	draw_line(pix, x, h - h * (p->anon + p->buffers + p->cached + p->kernel) / p->total, h - 1, color_fg_anon);
 	draw_line(pix, x, h - h * (p->buffers + p->cached + p->kernel) / p->total, h - 1, color_fg_buffers);
