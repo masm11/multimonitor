@@ -20,6 +20,8 @@ multi_monitor_SOURCES = \
     net.h		\
     memory.c		\
     memory.h		\
+    disk.c		\
+    disk.h		\
     list.c		\
     list.h		\
     draw.c		\
