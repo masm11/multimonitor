@@ -86,6 +86,8 @@ void disk_read_data(gint type)
 		}
 	    }
 	}
+	
+	fclose(fp);
     }
     
     if (r >= 0 && w >= 0) {
@@ -224,6 +226,9 @@ static gint append_Bps(const gchar *label, gdouble Bps, gchar *buf, gint bufsiz)
 const gchar *disk_tooltip(gint type)
 {
     gint n = type - TYPE_DISK_SDA;
+    
+    if (lastdata[n][0] >= 0 && lastdata[n][1] >= 0)
+	return NULL;
     
     gchar *buf = tooltip[n];
     gint bufsiz = sizeof tooltip[n];
