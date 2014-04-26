@@ -227,7 +227,7 @@ const gchar *disk_tooltip(gint type)
 {
     gint n = type - TYPE_DISK_SDA;
     
-    if (lastdata[n][0] >= 0 && lastdata[n][1] >= 0)
+    if (lastdata[n][0] < 0 || lastdata[n][1] < 0)
 	return NULL;
     
     gchar *buf = tooltip[n];
