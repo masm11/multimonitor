@@ -29,7 +29,7 @@ if test $ac_cv_func_openat != yes; then
 fi
 
 # xfce and gtk
-PKG_CHECK_MODULES(GTK, libxfce4panel-1.0 libxfcegui4-1.0 libxfce4util-1.0 pangoft2 gtk+-2.0 >= 2.12 glib-2.0)
+PKG_CHECK_MODULES(GTK, libxfce4panel-1.0 libxfcegui4-1.0 libxfce4util-1.0 pangoft2 gtk+-2.0 >= 2.24 glib-2.0)
 
 # installdirs
 AC_SUBST(pkgdatadir, '$(datarootdir)/xfce4/panel-plugins')
