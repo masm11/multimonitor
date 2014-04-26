@@ -15,46 +15,14 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef TYPES_H__INCLUDED
-#define TYPES_H__INCLUDED
+#ifndef TEMP_H__INCLUDED
+#define TEMP_H__INCLUDED
 
-enum {
-    TYPE_BATT_0,
-    TYPE_BATT_1,
-    
-    TYPE_CPUFREQ_0,
-    TYPE_CPUFREQ_1,
-    TYPE_CPUFREQ_2,
-    TYPE_CPUFREQ_3,
-    
-    TYPE_LOADAVG_1,
-    TYPE_LOADAVG_5,
-    TYPE_LOADAVG_15,
-    
-    TYPE_CPULOAD_0,
-    TYPE_CPULOAD_1,
-    TYPE_CPULOAD_2,
-    TYPE_CPULOAD_3,
-    
-    TYPE_NET_ETH0,
-    TYPE_NET_ETH1,
-    TYPE_NET_ETH2,
-    TYPE_NET_WLAN0,
-    TYPE_NET_ATH0,
-    TYPE_NET_LO,
-    
-    TYPE_MEM,
-    
-    TYPE_DISK_SDA,
-    TYPE_DISK_SDB,
-    TYPE_DISK_SDC,
-    TYPE_DISK_HDA,
-    TYPE_DISK_HDB,
-    TYPE_DISK_HDC,
-    
-    TYPE_TEMP,
-    
-    TYPE_NR
-};
+void temp_init(void);
+void temp_read_data(gint type);
+void temp_draw_1(gint type, GdkPixbuf *pix);
+void temp_draw_all(gint type, GdkPixbuf *pix);
+void temp_discard_data(gint type, gint size);
+const gchar *temp_tooltip(gint type);
 
-#endif	/* ifndef TYPES_H__INCLUDED */
+#endif	/* ifndef TEMP_H__INCLUDED */

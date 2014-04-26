@@ -30,6 +30,7 @@
 #include "net.h"
 #include "memory.h"
 #include "disk.h"
+#include "temp.h"
 #include "draw.h"
 #include "main.h"
 
@@ -82,6 +83,7 @@ static struct {
     FUNC("Disk",     "hda",   1000, disk),
     FUNC("Disk",     "hdb",   1000, disk),
     FUNC("Disk",     "hdc",   1000, disk),
+    FUNC("Temperature", "CPU",  1000, temp),
 #undef FUNC
 };
 
@@ -493,6 +495,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     net_init();
     mem_init();
     disk_init();
+    temp_init();
 }
 
 XFCE_PANEL_PLUGIN_REGISTER_EXTERNAL(plugin_start)

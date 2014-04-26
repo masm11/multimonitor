@@ -41,6 +41,11 @@ Multi Monitor for Xfce
   Disk は対数グラフです。中央より上向きが書き込み、下向きが読み出しです。
   横線1本めが 1KB/s、2本めが 1MB/s となります。
 
+  Temperature CPU は上端が temp1_max、下端が 0度です。よく解らないので、
+  /sys/devices/platform/coretemp.0/temp1_* しか使っていません。label から
+  見て、これが物理 CPU 1つめっぽいので。
+
+
 ライセンス
 
   GPL2 とします。COPYING を参照してください。

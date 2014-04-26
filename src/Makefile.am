@@ -22,6 +22,8 @@ multi_monitor_SOURCES = \
     memory.h		\
     disk.c		\
     disk.h		\
+    temp.c		\
+    temp.h		\
     list.c		\
     list.h		\
     draw.c		\
