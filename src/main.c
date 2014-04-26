@@ -108,6 +108,25 @@ static void draw_to_widget(gint type)
     if (work[type].drawable->window == NULL)
 	return;
     
+    /*
+     * GdkWindow のイメージをシフトしていくと、文字がずれていき、
+     * 読めなくなる。そこで、グラフイメージと文字は別々に描画
+     * しなければならない。
+     * グラフを何に持つかが問題。
+     *
+     * - GdkPixmap
+     *   GdkWindow にコピーするための gdk_draw_drawable() は deprecated。
+     *   cairo を使う必要がある。
+     *   しかし、gdk_cairo_set_source_pixmap() も deprecated で手段がない。
+     * - GdkImage
+     *   gdk_draw_image() が deprecated。というか GdkImage 自体が deprecated。
+     *   cairo image surfaces を使うことになってる。
+     * - GdkPixbuf
+     *   gdk_draw_pixbuf() が deprecated。cairo を使う。
+     *   イメージ操作が X client 側で、描画のたび X server までコピーしな
+     *   ければならないのは気になるが、自由に描画はできる。
+     */
+    
     // widget にコピー
     cairo_t *dst = gdk_cairo_create(work[type].drawable->window);
     gdk_cairo_set_source_pixbuf(dst, work[type].pix, 0, 0);
