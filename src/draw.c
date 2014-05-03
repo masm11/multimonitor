@@ -38,10 +38,23 @@ DEFINE_COLOR(fg_kernel, 0xffff, 0x8080, 0x8080)
 DEFINE_COLOR(fg_cached, 0x8080, 0x0000, 0x0000)
 DEFINE_COLOR(fg_buffers,0x8080, 0x4040, 0x0000)
 
+static inline gint clip(gint a, gint max)
+{
+    if (a < 0)
+	a = 0;
+    if (a > max)
+	a = max;
+    return a;
+}
+
 void draw_line(GdkPixbuf *pix,
 	gint x, gint y1, gint y2,
 	GdkColor *color)
 {
+    x = clip(x, gdk_pixbuf_get_width(pix) - 1);
+    y1 = clip(y1, gdk_pixbuf_get_height(pix) - 1);
+    y2 = clip(y2, gdk_pixbuf_get_height(pix) - 1);
+    
     guint rowstride = gdk_pixbuf_get_rowstride(pix);
     guchar *p = gdk_pixbuf_get_pixels(pix) + rowstride * y1 + x * gdk_pixbuf_get_n_channels(pix);
     for (gint y = y1; y <= y2; y++) {
@@ -56,6 +69,9 @@ void draw_point(GdkPixbuf *pix,
 	gint x, gint y,
 	GdkColor *color)
 {
+    x = clip(x, gdk_pixbuf_get_width(pix) - 1);
+    y = clip(y, gdk_pixbuf_get_height(pix) - 1);
+    
     guint rowstride = gdk_pixbuf_get_rowstride(pix);
     guchar *p = gdk_pixbuf_get_pixels(pix) + rowstride * y + x * gdk_pixbuf_get_n_channels(pix);
     
