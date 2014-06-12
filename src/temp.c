@@ -38,7 +38,7 @@ static gchar tooltip[128];
 
 void temp_init(void)
 {
-    dir = open("/sys/devices/platform/coretemp.0", O_RDONLY);
+    dir = open("/sys/devices/platform/coretemp.0/hwmon/hwmon1", O_RDONLY);
     
     max = (gdouble) sysfs_read_int(dir, "temp1_max") / 1000;
 }
