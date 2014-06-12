@@ -40,8 +40,9 @@
 
 #define NIF 6
 
-struct log_t {
+struct data_t {
     gdouble logtx, logrx;
+    gboolean running;
 };
 
 static int dir = -1;
@@ -61,6 +62,7 @@ static const char *ifnames[] = {
     "lo",
 };
 
+static gboolean get_running(const gchar *ifname);
 static gint get_addr4(const gchar *ifname, gchar *buf, gint bufsiz);
 static gint get_addr6(const gchar *ifname, gchar *buf, gint bufsiz);
 static gint append_bps(const gchar *label, gint64 bps, gchar *buf, gint bufsiz);
@@ -80,6 +82,7 @@ void net_read_data(gint type)
     
     gint64 r = sysfs_read_64(dir, "%s/statistics/rx_bytes", ifnames[n]);
     gint64 t = sysfs_read_64(dir, "%s/statistics/tx_bytes", ifnames[n]);
+    gboolean b = get_running(ifnames[n]);
     
     gint64 rx = -1;
     gint64 tx = -1;
@@ -94,12 +97,13 @@ void net_read_data(gint type)
     if (!read_flag[n]) {
 	read_flag[n] = TRUE;
 	rx = tx = -1;
+	b = FALSE;
     }
     
     lastdata[n][0] = rx;
     lastdata[n][1] = tx;
     
-    struct log_t *p = g_new0(struct log_t, 1);
+    struct data_t *p = g_new0(struct data_t, 1);
     if (rx < 0 || tx < 0) {
 	p->logrx = -1;
 	p->logtx = -1;
@@ -111,13 +115,14 @@ void net_read_data(gint type)
 	if (p->logtx < 0)
 	    p->logtx = 0;
     }
+    p->running = b;
     list[n] = g_list_prepend(list[n], p);
 }
 
-static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, struct log_t *p, gdouble level, gint x)
+static void draw_0(gint type, GdkPixbuf *pix, gint w, gint h, struct data_t *p, gdouble level, gint x)
 {
     if (p != NULL && p->logrx >= 0 && p->logtx >= 0) {
-	draw_line(pix, x, 0, h - 1, color_bg_normal);
+	draw_line(pix, x, 0, h - 1, p->running ? color_bg_normal : color_err);
 	draw_line(pix, x, h / 2 - h * p->logtx / level / 2, h / 2, color_fg_tx);
 	draw_line(pix, x, h / 2, h / 2 + h * p->logrx / level / 2, color_fg_rx);
 	
@@ -137,7 +142,7 @@ void net_draw_1(gint type, GdkPixbuf *pix)
     gdouble level = 1;
     
     for (GList *lp = list[n]; lp != NULL; lp = g_list_next(lp)) {
-	struct log_t *p = (struct log_t *) lp->data;
+	struct data_t *p = (struct data_t *) lp->data;
 	gdouble lev_rx = ceil(p->logrx);
 	gdouble lev_tx = ceil(p->logtx);
 	if (lev_rx > level)
@@ -155,7 +160,7 @@ void net_draw_1(gint type, GdkPixbuf *pix)
     gint w = gdk_pixbuf_get_width(pix);
     gint h = gdk_pixbuf_get_height(pix);
     
-    struct log_t *p = NULL;
+    struct data_t *p = NULL;
     GList *lp = list[n];
     if (lp != NULL)
 	p = lp->data;
@@ -173,7 +178,7 @@ void net_draw_all(gint type, GdkPixbuf *pix)
     gint h = gdk_pixbuf_get_height(pix);
     
     for (GList *lp = list[n]; lp != NULL; lp = g_list_next(lp)) {
-	struct log_t *p = (struct log_t *) lp->data;
+	struct data_t *p = (struct data_t *) lp->data;
 	gdouble lev_rx = ceil(p->logrx);
 	gdouble lev_tx = ceil(p->logtx);
 	if (lev_rx > level)
@@ -184,7 +189,7 @@ void net_draw_all(gint type, GdkPixbuf *pix)
     
     gint x = w - 1;
     for (GList *lp = list[n]; lp != NULL && x >= 0; lp = g_list_next(lp), x--) {
-	struct log_t *p = (struct log_t *) lp->data;
+	struct data_t *p = (struct data_t *) lp->data;
 	
 	draw_0(type, pix, w, h, p, level, x);
     }
@@ -234,6 +239,26 @@ const gchar *net_tooltip(gint type)
 	*p = '\0';
     
     return tooltip[n];
+}
+
+static gboolean get_running(const gchar *ifname)
+{
+    struct ifreq ifr;
+    int s;
+    
+    s = socket(PF_INET, SOCK_DGRAM, 0);
+    if (s == -1)
+	return 0;
+    
+    strcpy(ifr.ifr_name, ifname);
+    ifr.ifr_addr.sa_family = AF_INET;
+    
+    if (ioctl(s, SIOCGIFFLAGS, &ifr) == -1) {
+	close(s);
+	return 0;
+    }
+    
+    return (ifr.ifr_flags & IFF_RUNNING) ? 1 : 0;
 }
 
 static gint get_addr4(const gchar *ifname, gchar *buf, gint bufsiz)
