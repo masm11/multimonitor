@@ -258,6 +258,7 @@ static gboolean get_running(const gchar *ifname)
 	return 0;
     }
     
+    close(s);
     return (ifr.ifr_flags & IFF_RUNNING) ? 1 : 0;
 }
 
