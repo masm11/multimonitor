@@ -29,6 +29,7 @@
 #include "cpuload.h"
 #include "net.h"
 #include "memory.h"
+#include "swap.h"
 #include "disk.h"
 #include "temp.h"
 #include "draw.h"
@@ -77,6 +78,7 @@ static struct {
     FUNC("Network",  "ath0",  1000, net),
     FUNC("Network",  "lo",    1000, net),
     FUNC("Memory",   NULL,    1000, mem),
+    FUNC("Swap",     NULL,    1000, swap),
     FUNC("Disk",     "sda",   1000, disk),
     FUNC("Disk",     "sdb",   1000, disk),
     FUNC("Disk",     "sdc",   1000, disk),
@@ -494,6 +496,7 @@ static void plugin_start(XfcePanelPlugin *plg)
     cpuload_init();
     net_init();
     mem_init();
+    swap_init();
     disk_init();
     temp_init();
 }

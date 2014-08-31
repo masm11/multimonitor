@@ -20,6 +20,8 @@ multi_monitor_SOURCES = \
     net.h		\
     memory.c		\
     memory.h		\
+    swap.c		\
+    swap.h		\
     disk.c		\
     disk.h		\
     temp.c		\
