@@ -39,8 +39,10 @@ enum {
     TYPE_NET_ETH0,
     TYPE_NET_ETH1,
     TYPE_NET_ETH2,
+    TYPE_NET_EN,
     TYPE_NET_WLAN0,
     TYPE_NET_ATH0,
+    TYPE_NET_WL,
     TYPE_NET_LO,
     
     TYPE_MEM,

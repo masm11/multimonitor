@@ -38,7 +38,7 @@
 #include "sysfs.h"
 #include "net.h"
 
-#define NIF 6
+#define NIF 8
 
 struct data_t {
     gdouble logtx, logrx;
@@ -57,8 +57,10 @@ static const char *ifnames[] = {
     "eth0",
     "eth1",
     "eth2",
+    "enp0s25",
     "wlan0",
     "ath0",
+    "wlp3s0",
     "lo",
 };
 
