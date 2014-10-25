@@ -13,6 +13,7 @@ configure
 src/Makefile
 src/Makefile.in
 depcomp
+compile
 install-sh
 missing
 multi-monitor.desktop
